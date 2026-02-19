@@ -9,7 +9,7 @@ DROP INDEX IF EXISTS uq_inventory_items_lot_condition_grade;
 CREATE INDEX IF NOT EXISTS idx_inventory_items_unit_lookup
     ON inventory_items(
         card_print_id,
-        owner_id,
+        user_id,
         location_id,
         condition_id,
         COALESCE(grade_provider, ''),
