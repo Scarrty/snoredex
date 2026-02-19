@@ -14,6 +14,7 @@ Snoredex is a normalized database model for tracking all Snorlax Pokémon TCG pr
 - Print Types
 - Languages
 - Marketplace Listings
+- Procurement and sales tracking
 
 The schema follows **3rd Normal Form (3NF)** and is designed for:
 
@@ -22,6 +23,7 @@ The schema follows **3rd Normal Form (3NF)** and is designed for:
 - Marketplace syncing
 - API development
 - Multilingual release tracking
+- Gross margin and realized profit reporting
 
 ---
 
@@ -36,3 +38,10 @@ erDiagram
     CARD_PRINTS ||--o{ CARD_PRINT_LANGUAGES : printed_in
     LANGUAGES ||--o{ CARD_PRINT_LANGUAGES : available_as
     CARD_PRINTS ||--o{ CARDMARKET_LISTINGS : listed_on
+
+    CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
+    INVENTORY_ITEMS ||--o{ ACQUISITION_LINES : procured_as
+    ACQUISITIONS ||--o{ ACQUISITION_LINES : has
+    INVENTORY_ITEMS ||--o{ SALES_LINES : sold_from
+    SALES ||--o{ SALES_LINES : has
+```

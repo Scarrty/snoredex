@@ -14,12 +14,20 @@ Maintain marketplace references
 
 Enable multilingual release tracking
 
+Track procurement and sales economics
+
 Entity Relationship Overview
 Pokemon ──< CardPrint >── Set
                    │
                    ├──< CardMarketListing
                    │
-                   └──< CardPrintLanguage >── Language
+                   ├──< CardPrintLanguage >── Language
+                   │
+                   ├──< InventoryItem >── Location
+                   │
+                   ├──< AcquisitionLine >── Acquisition
+                   │
+                   └──< SalesLine >── Sale
 
 Tables
 1. pokemon
@@ -240,3 +248,91 @@ CREATE INDEX idx_inventory_items_owner_location
 
 CREATE INDEX idx_inventory_items_quantity_on_hand
     ON inventory_items(quantity_on_hand);
+
+11. acquisitions
+
+Tracks inbound procurement transactions.
+
+CREATE TABLE acquisitions (
+    id SERIAL PRIMARY KEY,
+    acquired_at DATE NOT NULL,
+    supplier_reference VARCHAR(255),
+    channel VARCHAR(100),
+    currency VARCHAR(3) NOT NULL,
+    notes TEXT
+);
+
+Examples
+
+Supplier reference: cardmarket_seller_123, local_store_foo
+
+Channel: Cardmarket, eBay, local
+
+12. acquisition_lines
+
+Line-level acquisition economics tied to inventory records.
+
+CREATE TABLE acquisition_lines (
+    id SERIAL PRIMARY KEY,
+    acquisition_id INTEGER NOT NULL REFERENCES acquisitions(id) ON DELETE CASCADE,
+    card_print_id INTEGER NOT NULL,
+    owner_id INTEGER NOT NULL,
+    location_id INTEGER NOT NULL,
+    language_id INTEGER REFERENCES languages(id),
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    unit_cost NUMERIC(12, 2) NOT NULL CHECK (unit_cost >= 0),
+    fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
+    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
+    FOREIGN KEY (card_print_id, owner_id, location_id)
+        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+);
+
+13. sales
+
+Tracks outbound card sales transactions.
+
+CREATE TABLE sales (
+    id SERIAL PRIMARY KEY,
+    sold_at DATE NOT NULL,
+    buyer_reference VARCHAR(255),
+    channel VARCHAR(100),
+    currency VARCHAR(3) NOT NULL,
+    notes TEXT
+);
+
+14. sales_lines
+
+Line-level sales economics tied to inventory records.
+
+CREATE TABLE sales_lines (
+    id SERIAL PRIMARY KEY,
+    sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    card_print_id INTEGER NOT NULL,
+    owner_id INTEGER NOT NULL,
+    location_id INTEGER NOT NULL,
+    language_id INTEGER REFERENCES languages(id),
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    unit_sale_price NUMERIC(12, 2) NOT NULL CHECK (unit_sale_price >= 0),
+    fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
+    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
+    FOREIGN KEY (card_print_id, owner_id, location_id)
+        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+);
+
+15. reporting_avg_acquisition_cost (view)
+
+Computes average unit cost (inclusive of line fees/shipping allocations) per inventory key and language.
+
+16. reporting_profitability_by_card_set_language (view)
+
+Aggregates sold quantity, gross revenue, COGS, gross margin, and realized profit by:
+
+Card print
+
+Set
+
+Language
+
+Realized profit logic:
+
+Revenue net of sale-side fees and shipping, minus average acquisition cost for sold quantities.

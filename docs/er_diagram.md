@@ -68,6 +68,51 @@ erDiagram
         int quantity_damaged
     }
 
+
+    ACQUISITIONS {
+        int id PK
+        date acquired_at
+        varchar supplier_reference
+        varchar channel
+        varchar currency
+        text notes
+    }
+
+    ACQUISITION_LINES {
+        int id PK
+        int acquisition_id FK
+        int card_print_id FK
+        int owner_id
+        int location_id
+        int language_id FK
+        int quantity
+        numeric unit_cost
+        numeric fees
+        numeric shipping
+    }
+
+    SALES {
+        int id PK
+        date sold_at
+        varchar buyer_reference
+        varchar channel
+        varchar currency
+        text notes
+    }
+
+    SALES_LINES {
+        int id PK
+        int sale_id FK
+        int card_print_id FK
+        int owner_id
+        int location_id
+        int language_id FK
+        int quantity
+        numeric unit_sale_price
+        numeric fees
+        numeric shipping
+    }
+
     POKEMON ||--o{ CARD_PRINTS : has
     SETS ||--o{ CARD_PRINTS : contains
     ERAS ||--o{ SETS : categorizes
@@ -77,4 +122,10 @@ erDiagram
     CARD_PRINTS ||--o{ CARDMARKET_LISTINGS : listed_on
     CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
     LOCATIONS ||--o{ INVENTORY_ITEMS : stores
+    ACQUISITIONS ||--o{ ACQUISITION_LINES : has
+    SALES ||--o{ SALES_LINES : has
+    INVENTORY_ITEMS ||--o{ ACQUISITION_LINES : procured_as
+    INVENTORY_ITEMS ||--o{ SALES_LINES : sold_from
+    LANGUAGES ||--o{ ACQUISITION_LINES : acquired_language
+    LANGUAGES ||--o{ SALES_LINES : sold_language
 ```
