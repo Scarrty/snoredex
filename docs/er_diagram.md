@@ -59,10 +59,21 @@ erDiagram
         varchar location_type
     }
 
+    CARD_CONDITIONS {
+        int id PK
+        varchar code
+        varchar name
+        int sort_order
+    }
+
     INVENTORY_ITEMS {
+        int id PK
         int card_print_id FK
         int owner_id
         int location_id FK
+        int condition_id FK
+        varchar grade_provider
+        decimal grade_value
         int quantity_on_hand
         int quantity_reserved
         int quantity_damaged
@@ -77,4 +88,5 @@ erDiagram
     CARD_PRINTS ||--o{ CARDMARKET_LISTINGS : listed_on
     CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
     LOCATIONS ||--o{ INVENTORY_ITEMS : stores
+    CARD_CONDITIONS ||--o{ INVENTORY_ITEMS : conditions
 ```
