@@ -1,0 +1,48 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    container_name: snoredex-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: snoredex
+      POSTGRES_PASSWORD: snoredex
+      POSTGRES_DB: snoredex
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+
+  api:
+    image: node:20-alpine
+    container_name: snoredex-api
+    working_dir: /workspace
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @snoredex/api dev"
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://snoredex:snoredex@postgres:5432/snoredex
+      JWT_SECRET: dev-secret
+      PORT: 3001
+    volumes:
+      - ./:/workspace
+    depends_on:
+      - postgres
+
+  web:
+    image: node:20-alpine
+    container_name: snoredex-web
+    working_dir: /workspace
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @snoredex/web dev"
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001/api/v1
+    volumes:
+      - ./:/workspace
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

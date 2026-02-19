@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  username    String   @unique @db.VarChar(100)
+  email       String?  @unique @db.VarChar(255)
+  displayName String?  @map("display_name") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  inventoryItems InventoryItem[]
+
+  @@map("users")
+}
+
+model Pokemon {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique @db.VarChar(100)
+  nationalDexNo Int?     @unique @map("national_dex_no")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  cardPrints CardPrint[]
+
+  @@map("pokemon")
+}
+
+model Era {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  sets Set[]
+
+  @@map("eras")
+}
+
+model Set {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  setCode   String?  @map("set_code") @db.VarChar(20)
+  eraId     Int?     @map("era_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  era        Era?        @relation(fields: [eraId], references: [id])
+  cardPrints CardPrint[]
+
+  @@unique([name, setCode])
+  @@map("sets")
+}
+
+model CardType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  cardPrints CardPrint[]
+
+  @@map("card_types")
+}
+
+model CardPrint {
+  id         Int      @id @default(autoincrement())
+  pokemonId  Int      @map("pokemon_id")
+  setId      Int      @map("set_id")
+  cardNumber String   @map("card_number") @db.VarChar(50)
+  typeId     Int?     @map("type_id")
+  sortNumber Int?     @map("sort_number")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  pokemon Pokemon   @relation(fields: [pokemonId], references: [id])
+  set     Set       @relation(fields: [setId], references: [id])
+  type    CardType? @relation(fields: [typeId], references: [id])
+
+  inventoryItems     InventoryItem[]
+  cardPrintLanguages CardPrintLanguage[]
+
+  @@map("card_prints")
+}
+
+model Language {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  cardPrintLanguages CardPrintLanguage[]
+
+  @@map("languages")
+}
+
+model CardPrintLanguage {
+  cardPrintId Int @map("card_print_id")
+  languageId  Int @map("language_id")
+
+  cardPrint CardPrint @relation(fields: [cardPrintId], references: [id], onDelete: Cascade)
+  language  Language  @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@id([cardPrintId, languageId])
+  @@map("card_print_languages")
+}
+
+model Location {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  locationType String   @map("location_type") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  inventoryItems InventoryItem[]
+
+  @@map("locations")
+}
+
+model CardCondition {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  sortOrder Int      @unique @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  inventoryItems InventoryItem[]
+
+  @@map("card_conditions")
+}
+
+model InventoryItem {
+  id               Int      @id @default(autoincrement())
+  cardPrintId      Int      @map("card_print_id")
+  userId           Int      @map("user_id")
+  locationId       Int      @map("location_id")
+  conditionId      Int      @map("condition_id")
+  gradeProvider    String?  @map("grade_provider") @db.VarChar(100)
+  gradeValue       Decimal? @map("grade_value") @db.Decimal(3, 1)
+  quantityOnHand   Int      @default(1) @map("quantity_on_hand")
+  quantityReserved Int      @default(0) @map("quantity_reserved")
+  quantityDamaged  Int      @default(0) @map("quantity_damaged")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  cardPrint  CardPrint     @relation(fields: [cardPrintId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id])
+  location   Location      @relation(fields: [locationId], references: [id])
+  condition  CardCondition @relation(fields: [conditionId], references: [id])
+
+  @@map("inventory_items")
+}
