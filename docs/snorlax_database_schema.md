@@ -240,3 +240,72 @@ CREATE INDEX idx_inventory_items_owner_location
 
 CREATE INDEX idx_inventory_items_quantity_on_hand
     ON inventory_items(quantity_on_hand);
+
+11. Join/filter performance indexes
+
+Added indexes for high-frequency joins and filters:
+
+```sql
+CREATE INDEX idx_card_prints_set_id
+    ON card_prints(set_id);
+
+CREATE INDEX idx_card_prints_pokemon_id
+    ON card_prints(pokemon_id);
+
+CREATE INDEX idx_card_prints_type_id
+    ON card_prints(type_id);
+
+CREATE INDEX idx_card_prints_card_number
+    ON card_prints(card_number);
+
+CREATE INDEX idx_sets_era_id
+    ON sets(era_id);
+
+CREATE INDEX idx_sets_set_code
+    ON sets(set_code);
+
+CREATE INDEX idx_card_print_languages_language_id
+    ON card_print_languages(language_id);
+
+CREATE INDEX idx_card_print_languages_card_print_id
+    ON card_print_languages(card_print_id);
+
+CREATE INDEX idx_cardmarket_listings_card_print_is_available
+    ON cardmarket_listings(card_print_id, is_available);
+```
+
+Composite/targeted indexes tuned after `EXPLAIN` for representative set + language + availability + condition queries:
+
+```sql
+CREATE INDEX idx_card_prints_set_type_card_number
+    ON card_prints(set_id, type_id, card_number);
+
+CREATE INDEX idx_card_print_languages_language_card_print
+    ON card_print_languages(language_id, card_print_id);
+
+CREATE INDEX idx_cardmarket_listings_available_card_print
+    ON cardmarket_listings(is_available, card_print_id);
+
+CREATE INDEX idx_inventory_items_available_card_print
+    ON inventory_items(card_print_id)
+    WHERE quantity_on_hand > quantity_reserved + quantity_damaged;
+```
+
+Representative query shape:
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT cp.id, cp.card_number, s.set_code, cml.url
+FROM card_prints cp
+JOIN sets s ON s.id = cp.set_id
+JOIN card_print_languages cpl ON cpl.card_print_id = cp.id
+JOIN cardmarket_listings cml ON cml.card_print_id = cp.id
+JOIN inventory_items ii ON ii.card_print_id = cp.id
+WHERE s.set_code = 'S77'
+  AND cpl.language_id = 5
+  AND cml.is_available = TRUE
+  AND ii.quantity_on_hand > ii.quantity_reserved + ii.quantity_damaged
+  AND cp.type_id = 5
+ORDER BY cp.card_number
+LIMIT 100;
+```

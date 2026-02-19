@@ -77,3 +77,44 @@ CREATE INDEX idx_inventory_items_owner_location
 
 CREATE INDEX idx_inventory_items_quantity_on_hand
     ON inventory_items(quantity_on_hand);
+
+CREATE INDEX idx_card_prints_set_id
+    ON card_prints(set_id);
+
+CREATE INDEX idx_card_prints_pokemon_id
+    ON card_prints(pokemon_id);
+
+CREATE INDEX idx_card_prints_type_id
+    ON card_prints(type_id);
+
+CREATE INDEX idx_card_prints_card_number
+    ON card_prints(card_number);
+
+CREATE INDEX idx_sets_era_id
+    ON sets(era_id);
+
+CREATE INDEX idx_sets_set_code
+    ON sets(set_code);
+
+CREATE INDEX idx_card_print_languages_language_id
+    ON card_print_languages(language_id);
+
+CREATE INDEX idx_card_print_languages_card_print_id
+    ON card_print_languages(card_print_id);
+
+CREATE INDEX idx_cardmarket_listings_card_print_is_available
+    ON cardmarket_listings(card_print_id, is_available);
+
+CREATE INDEX idx_inventory_items_available_card_print
+    ON inventory_items(card_print_id)
+    WHERE quantity_on_hand > quantity_reserved + quantity_damaged;
+
+CREATE INDEX idx_card_prints_set_type_card_number
+    ON card_prints(set_id, type_id, card_number);
+
+CREATE INDEX idx_card_print_languages_language_card_print
+    ON card_print_languages(language_id, card_print_id);
+
+CREATE INDEX idx_cardmarket_listings_available_card_print
+    ON cardmarket_listings(is_available, card_print_id);
+
