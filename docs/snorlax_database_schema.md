@@ -196,3 +196,47 @@ Replaces:
 auf CM auffindbar?
 
 Unnamed: 1 (URL column)
+9. locations
+
+Stores inventory storage channels/containers.
+
+CREATE TABLE locations (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(255) NOT NULL,
+    location_type   VARCHAR(100) NOT NULL
+);
+
+Examples:
+
+Binder
+
+Deck box
+
+Warehouse shelf
+
+Sales channel
+
+10. inventory_items
+
+Tracks per-print inventory by owner and location.
+
+CREATE TABLE inventory_items (
+    card_print_id       INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
+    owner_id            INTEGER NOT NULL,
+    location_id         INTEGER NOT NULL REFERENCES locations(id),
+    quantity_on_hand    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_on_hand >= 0),
+    quantity_reserved   INTEGER NOT NULL DEFAULT 0 CHECK (quantity_reserved >= 0),
+    quantity_damaged    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged >= 0),
+    PRIMARY KEY (card_print_id, owner_id, location_id)
+);
+
+Indexes
+
+CREATE INDEX idx_inventory_items_card_print_id
+    ON inventory_items(card_print_id);
+
+CREATE INDEX idx_inventory_items_owner_location
+    ON inventory_items(owner_id, location_id);
+
+CREATE INDEX idx_inventory_items_quantity_on_hand
+    ON inventory_items(quantity_on_hand);
