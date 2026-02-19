@@ -15,7 +15,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TABLE owners (
+CREATE TYPE inventory_movement_type AS ENUM (
+    'purchase',
+    'sale',
+    'transfer_in',
+    'transfer_out',
+    'adjustment'
+);
+
+CREATE TYPE external_listing_status AS ENUM (
+    'draft',
+    'active',
+    'paused',
+    'sold',
+    'ended',
+    'error'
+);
+
+CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE,
@@ -24,15 +41,17 @@ CREATE TABLE owners (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER trg_owners_set_updated_at
-BEFORE UPDATE ON owners
+CREATE TRIGGER trg_users_set_updated_at
+BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE pokemon (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    national_dex_no INTEGER
+    national_dex_no INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX uq_pokemon_name
@@ -42,13 +61,25 @@ CREATE UNIQUE INDEX uq_pokemon_national_dex_no
     ON pokemon(national_dex_no)
     WHERE national_dex_no IS NOT NULL;
 
+CREATE TRIGGER trg_pokemon_set_updated_at
+BEFORE UPDATE ON pokemon
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
+
 CREATE TABLE eras (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX uq_eras_name
     ON eras(name);
+
+CREATE TRIGGER trg_eras_set_updated_at
+BEFORE UPDATE ON eras
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE sets (
     id SERIAL PRIMARY KEY,
@@ -75,11 +106,18 @@ EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE card_types (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX uq_card_types_name
     ON card_types(name);
+
+CREATE TRIGGER trg_card_types_set_updated_at
+BEFORE UPDATE ON card_types
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE card_prints (
     id SERIAL PRIMARY KEY,
@@ -111,8 +149,15 @@ CREATE TABLE languages (
     code VARCHAR(20) UNIQUE NOT NULL,
     CONSTRAINT chk_languages_code_uppercase CHECK (code = UPPER(code)),
     CONSTRAINT chk_languages_code_format CHECK (code ~ '^[A-Z]{2,3}(-[A-Z0-9]{2,8})*$'),
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TRIGGER trg_languages_set_updated_at
+BEFORE UPDATE ON languages
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE card_print_languages (
     card_print_id INTEGER REFERENCES card_prints(id) ON DELETE CASCADE,
@@ -123,20 +168,34 @@ CREATE TABLE card_print_languages (
 CREATE TABLE locations (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    location_type VARCHAR(100) NOT NULL
+    location_type VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TRIGGER trg_locations_set_updated_at
+BEFORE UPDATE ON locations
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE card_conditions (
     id SERIAL PRIMARY KEY,
     code VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
-    sort_order INTEGER NOT NULL UNIQUE
+    sort_order INTEGER NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TRIGGER trg_card_conditions_set_updated_at
+BEFORE UPDATE ON card_conditions
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE inventory_items (
     id SERIAL PRIMARY KEY,
     card_print_id INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
-    owner_id INTEGER NOT NULL REFERENCES owners(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     location_id INTEGER NOT NULL REFERENCES locations(id),
     condition_id INTEGER NOT NULL REFERENCES card_conditions(id),
     grade_provider VARCHAR(100),
@@ -164,7 +223,7 @@ CREATE TABLE inventory_items (
 CREATE INDEX idx_inventory_items_unit_lookup
     ON inventory_items(
         card_print_id,
-        owner_id,
+        user_id,
         location_id,
         condition_id,
         COALESCE(grade_provider, ''),
@@ -174,11 +233,11 @@ CREATE INDEX idx_inventory_items_unit_lookup
 CREATE INDEX idx_inventory_items_card_print_id
     ON inventory_items(card_print_id);
 
-CREATE INDEX idx_inventory_items_owner_location
-    ON inventory_items(owner_id, location_id);
+CREATE INDEX idx_inventory_items_user_location
+    ON inventory_items(user_id, location_id);
 
-CREATE INDEX idx_inventory_items_owner_id
-    ON inventory_items(owner_id);
+CREATE INDEX idx_inventory_items_user_id
+    ON inventory_items(user_id);
 
 CREATE INDEX idx_inventory_items_condition_id
     ON inventory_items(condition_id);
@@ -194,15 +253,15 @@ EXECUTE FUNCTION update_timestamp();
 CREATE TABLE inventory_movements (
     id SERIAL PRIMARY KEY,
     inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
-    movement_type VARCHAR(50) NOT NULL,
+    movement_type inventory_movement_type NOT NULL,
     quantity_delta INTEGER NOT NULL CHECK (quantity_delta <> 0),
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     reference_type VARCHAR(100),
     reference_id VARCHAR(100),
     notes TEXT,
     created_by VARCHAR(100),
-    CONSTRAINT chk_inventory_movements_movement_type
-        CHECK (movement_type IN ('purchase', 'sale', 'transfer-in', 'transfer-out', 'adjustment'))
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_inventory_movements_item_occurred_at
@@ -211,21 +270,32 @@ CREATE INDEX idx_inventory_movements_item_occurred_at
 CREATE INDEX idx_inventory_movements_type_occurred_at
     ON inventory_movements(movement_type, occurred_at);
 
+CREATE TRIGGER trg_inventory_movements_set_updated_at
+BEFORE UPDATE ON inventory_movements
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
+
 CREATE TABLE marketplaces (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(50) NOT NULL UNIQUE,
     base_url TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TRIGGER trg_marketplaces_set_updated_at
+BEFORE UPDATE ON marketplaces
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
 
 CREATE TABLE external_listings (
     id SERIAL PRIMARY KEY,
     marketplace_id INTEGER NOT NULL REFERENCES marketplaces(id),
     inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
     external_listing_id VARCHAR(255) NOT NULL,
-    listing_status VARCHAR(30) NOT NULL DEFAULT 'active'
-        CHECK (listing_status IN ('draft', 'active', 'paused', 'sold', 'ended', 'error')),
+    listing_status external_listing_status NOT NULL DEFAULT 'active',
     listed_price NUMERIC(12,2) CHECK (listed_price >= 0),
     currency CHAR(3),
     quantity_listed INTEGER CHECK (quantity_listed >= 0),
@@ -352,7 +422,7 @@ EXECUTE FUNCTION prevent_inventory_movement_mutation();
 
 CREATE OR REPLACE FUNCTION record_inventory_movement(
     p_inventory_item_id INTEGER,
-    p_movement_type VARCHAR,
+    p_movement_type inventory_movement_type,
     p_quantity_delta INTEGER,
     p_occurred_at TIMESTAMPTZ DEFAULT NOW(),
     p_reference_type VARCHAR DEFAULT NULL,
@@ -505,7 +575,7 @@ EXECUTE FUNCTION update_timestamp();
 CREATE VIEW reporting_avg_acquisition_cost AS
 SELECT
     ii.card_print_id,
-    ii.owner_id,
+    ii.user_id,
     ii.location_id,
     al.language_id,
     SUM(al.quantity) AS total_acquired_qty,
@@ -517,7 +587,7 @@ FROM acquisition_lines al
 JOIN inventory_items ii ON ii.id = al.inventory_item_id
 GROUP BY
     ii.card_print_id,
-    ii.owner_id,
+    ii.user_id,
     ii.location_id,
     al.language_id;
 
@@ -542,7 +612,7 @@ JOIN sets s ON s.id = cp.set_id
 LEFT JOIN languages l ON l.id = sl.language_id
 LEFT JOIN reporting_avg_acquisition_cost rac
     ON rac.card_print_id = ii.card_print_id
-    AND rac.owner_id = ii.owner_id
+    AND rac.user_id = ii.user_id
     AND rac.location_id = ii.location_id
     AND (rac.language_id IS NOT DISTINCT FROM sl.language_id)
 GROUP BY
@@ -553,11 +623,11 @@ GROUP BY
     COALESCE(l.code, 'UNK'),
     COALESCE(l.name, 'Unknown');
 
-COMMENT ON TABLE owners IS 'Account owners/users who own inventory and business transactions.';
-COMMENT ON COLUMN owners.id IS 'Primary key for owner accounts.';
-COMMENT ON COLUMN owners.username IS 'Unique owner login/handle.';
-COMMENT ON COLUMN owners.email IS 'Optional unique email address for the owner account.';
-COMMENT ON COLUMN owners.display_name IS 'Human-friendly name shown in interfaces and reports.';
+COMMENT ON TABLE users IS 'Application users who own inventory and business transactions.';
+COMMENT ON COLUMN users.id IS 'Primary key for user accounts.';
+COMMENT ON COLUMN users.username IS 'Unique user login/handle.';
+COMMENT ON COLUMN users.email IS 'Optional unique email address for the user account.';
+COMMENT ON COLUMN users.display_name IS 'Human-friendly name shown in interfaces and reports.';
 
 COMMENT ON TABLE pokemon IS 'Pokémon master records used to group printed cards.';
 COMMENT ON COLUMN pokemon.id IS 'Primary key for Pokémon.';
@@ -597,7 +667,7 @@ COMMENT ON COLUMN card_conditions.code IS 'Unique short code representing condit
 COMMENT ON TABLE inventory_items IS 'Physical inventory units and ownership/location context.';
 COMMENT ON COLUMN inventory_items.id IS 'Primary key for an inventory item.';
 COMMENT ON COLUMN inventory_items.card_print_id IS 'Foreign key to the represented card print.';
-COMMENT ON COLUMN inventory_items.owner_id IS 'Foreign key to owners who own this inventory item.';
+COMMENT ON COLUMN inventory_items.user_id IS 'Foreign key to users who own this inventory item.';
 COMMENT ON COLUMN inventory_items.location_id IS 'Foreign key to storage location of this inventory item.';
 COMMENT ON COLUMN inventory_items.condition_id IS 'Foreign key to card condition for this inventory item.';
 COMMENT ON COLUMN inventory_items.quantity_on_hand IS 'Synchronized quantity; maintained by immutable inventory movements.';
@@ -605,7 +675,7 @@ COMMENT ON COLUMN inventory_items.quantity_on_hand IS 'Synchronized quantity; ma
 COMMENT ON TABLE inventory_movements IS 'Immutable ledger of stock movements applied to inventory items.';
 COMMENT ON COLUMN inventory_movements.id IS 'Primary key for an inventory movement event.';
 COMMENT ON COLUMN inventory_movements.inventory_item_id IS 'Foreign key to the impacted inventory item.';
-COMMENT ON COLUMN inventory_movements.movement_type IS 'Movement reason category; constrained by CHECK (candidate for enum later).';
+COMMENT ON COLUMN inventory_movements.movement_type IS 'Movement reason category represented by the inventory_movement_type enum.';
 COMMENT ON COLUMN inventory_movements.quantity_delta IS 'Signed quantity change applied atomically to quantity_on_hand.';
 
 COMMENT ON TABLE marketplaces IS 'Configured external marketplaces for listings sync.';
