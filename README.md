@@ -22,7 +22,6 @@ Marketplace support is normalized via:
 
 - `marketplaces` (Cardmarket, eBay, TCGPlayer, etc.)
 - `external_listings` linked to inventory items
-- `cardmarket_listings` compatibility view for legacy reads
 
 ## 🗺 Database ER Diagram
 

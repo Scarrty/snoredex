@@ -346,25 +346,6 @@ CREATE TABLE external_listings (
 );
 ```
 
-12. cardmarket_listings (compatibility view)
-
-Legacy read model maintained as a view to avoid breaking existing queries.
-
-```sql
-CREATE VIEW cardmarket_listings AS
-SELECT
-    el.id,
-    ii.card_print_id,
-    el.url,
-    (el.listing_status IN ('active', 'paused') AND COALESCE(el.quantity_listed, 0) > 0) AS is_available
-FROM external_listings el
-JOIN inventory_items ii ON ii.id = el.inventory_item_id
-JOIN marketplaces m ON m.id = el.marketplace_id
-WHERE m.slug = 'cardmarket';
-```
-
 Migration
 
-Use `database/migrations/20260219_external_listings.sql` to migrate from a physical
-`cardmarket_listings` table to the normalized model and recreate `cardmarket_listings`
-as a compatibility view.
+Use `database/migrations/20260219_external_listings.sql` to create the normalized external listings model.
