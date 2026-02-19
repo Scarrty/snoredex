@@ -352,6 +352,4 @@ CREATE TABLE external_listings (
 );
 ```
 
-Migration
-
-Use `database/migrations/20260219_external_listings.sql` to create the normalized external listings model.
+The schema is intended to be initialized directly from `database/schema.sql` for new database setups.
