@@ -1,3 +1,7 @@
+<!-- SPDX-License-Identifier: CC-BY-NC-4.0 -->
+<!-- Database schema artifact licensed under CC BY-NC 4.0:
+     https://creativecommons.org/licenses/by-nc/4.0/ -->
+
 Overview
 
 This schema converts the flat Excel structure into a normalized relational database model.
