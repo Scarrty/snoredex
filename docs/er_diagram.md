@@ -60,12 +60,25 @@ erDiagram
     }
 
     INVENTORY_ITEMS {
+        int id PK
         int card_print_id FK
         int owner_id
         int location_id FK
         int quantity_on_hand
         int quantity_reserved
         int quantity_damaged
+    }
+
+    INVENTORY_MOVEMENTS {
+        int id PK
+        int inventory_item_id FK
+        varchar movement_type
+        int quantity_delta
+        timestamptz occurred_at
+        varchar reference_type
+        varchar reference_id
+        text notes
+        varchar created_by
     }
 
     POKEMON ||--o{ CARD_PRINTS : has
@@ -77,4 +90,5 @@ erDiagram
     CARD_PRINTS ||--o{ CARDMARKET_LISTINGS : listed_on
     CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
     LOCATIONS ||--o{ INVENTORY_ITEMS : stores
+    INVENTORY_ITEMS ||--o{ INVENTORY_MOVEMENTS : moves_through
 ```

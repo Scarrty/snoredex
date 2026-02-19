@@ -221,13 +221,26 @@ Sales channel
 Tracks per-print inventory by owner and location.
 
 CREATE TABLE inventory_items (
+    id                  SERIAL PRIMARY KEY,
     card_print_id       INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
     owner_id            INTEGER NOT NULL,
     location_id         INTEGER NOT NULL REFERENCES locations(id),
     quantity_on_hand    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_on_hand >= 0),
     quantity_reserved   INTEGER NOT NULL DEFAULT 0 CHECK (quantity_reserved >= 0),
     quantity_damaged    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged >= 0),
-    PRIMARY KEY (card_print_id, owner_id, location_id)
+    UNIQUE (card_print_id, owner_id, location_id)
+);
+
+CREATE TABLE inventory_movements (
+    id                  SERIAL PRIMARY KEY,
+    inventory_item_id   INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+    movement_type       VARCHAR(50) NOT NULL CHECK (movement_type IN ('purchase', 'sale', 'transfer-in', 'transfer-out', 'adjustment')),
+    quantity_delta      INTEGER NOT NULL CHECK (quantity_delta <> 0),
+    occurred_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reference_type      VARCHAR(100),
+    reference_id        VARCHAR(100),
+    notes               TEXT,
+    created_by          VARCHAR(100)
 );
 
 Indexes
@@ -240,3 +253,14 @@ CREATE INDEX idx_inventory_items_owner_location
 
 CREATE INDEX idx_inventory_items_quantity_on_hand
     ON inventory_items(quantity_on_hand);
+
+CREATE INDEX idx_inventory_movements_item_occurred_at
+    ON inventory_movements(inventory_item_id, occurred_at);
+
+CREATE INDEX idx_inventory_movements_type_occurred_at
+    ON inventory_movements(movement_type, occurred_at);
+
+
+Inventory movement model
+
+`inventory_items.quantity_on_hand` is treated as a synchronized aggregate derived from `inventory_movements.quantity_delta`. Stock changes should be recorded by inserting movements (purchase, sale, transfer-in, transfer-out, adjustment), not by directly updating `inventory_items.quantity_on_hand`.
