@@ -8,22 +8,41 @@ CREATE TABLE pokemon (
     national_dex_no INTEGER
 );
 
+CREATE UNIQUE INDEX uq_pokemon_name
+    ON pokemon(name);
+
+CREATE UNIQUE INDEX uq_pokemon_national_dex_no
+    ON pokemon(national_dex_no)
+    WHERE national_dex_no IS NOT NULL;
+
 CREATE TABLE eras (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
 
+CREATE UNIQUE INDEX uq_eras_name
+    ON eras(name);
+
 CREATE TABLE sets (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     set_code VARCHAR(20),
+    CONSTRAINT chk_sets_set_code_format CHECK (
+        set_code IS NULL OR set_code ~ '^[A-Z0-9][A-Z0-9-]*$'
+    ),
     era_id INTEGER REFERENCES eras(id)
 );
+
+CREATE UNIQUE INDEX uq_sets_business_key
+    ON sets(name, COALESCE(set_code, ''));
 
 CREATE TABLE card_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
+
+CREATE UNIQUE INDEX uq_card_types_name
+    ON card_types(name);
 
 CREATE TABLE card_prints (
     id SERIAL PRIMARY KEY,
@@ -34,9 +53,14 @@ CREATE TABLE card_prints (
     sort_number INTEGER
 );
 
+CREATE UNIQUE INDEX uq_card_prints_business_key
+    ON card_prints(pokemon_id, set_id, card_number, COALESCE(type_id, -1));
+
 CREATE TABLE languages (
     id SERIAL PRIMARY KEY,
     code VARCHAR(20) UNIQUE NOT NULL,
+    CONSTRAINT chk_languages_code_uppercase CHECK (code = UPPER(code)),
+    CONSTRAINT chk_languages_code_format CHECK (code ~ '^[A-Z]{2,3}(-[A-Z0-9]{2,8})*$'),
     name VARCHAR(100) NOT NULL
 );
 
@@ -48,7 +72,7 @@ CREATE TABLE card_print_languages (
 
 CREATE TABLE cardmarket_listings (
     id SERIAL PRIMARY KEY,
-    card_print_id INTEGER REFERENCES card_prints(id) ON DELETE CASCADE,
+    card_print_id INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
     url TEXT,
     is_available BOOLEAN
 );
