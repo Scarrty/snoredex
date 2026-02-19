@@ -6,6 +6,12 @@
 
 ```mermaid
 erDiagram
+    USERS {
+        int id PK
+        varchar username
+        varchar email
+        varchar display_name
+    }
 
     POKEMON {
         int id PK
@@ -66,11 +72,11 @@ erDiagram
     INVENTORY_ITEMS {
         int id PK
         int card_print_id FK
-        int owner_id
+        int user_id FK
         int location_id FK
         int condition_id FK
         varchar grade_provider
-        decimal grade_value
+        numeric grade_value
         int quantity_on_hand
         int quantity_reserved
         int quantity_damaged
@@ -79,29 +85,47 @@ erDiagram
     INVENTORY_MOVEMENTS {
         int id PK
         int inventory_item_id FK
-        varchar movement_type
+        enum movement_type
         int quantity_delta
         timestamptz occurred_at
         varchar reference_type
         varchar reference_id
-        text notes
         varchar created_by
+    }
+
+    MARKETPLACES {
+        int id PK
+        varchar name
+        varchar slug
+        text base_url
+        boolean is_active
+    }
+
+    EXTERNAL_LISTINGS {
+        int id PK
+        int marketplace_id FK
+        int inventory_item_id FK
+        varchar external_listing_id
+        enum listing_status
+        numeric listed_price
+        char currency
+        int quantity_listed
+        timestamptz synced_at
+        text url
+    }
 
     ACQUISITIONS {
         int id PK
         date acquired_at
         varchar supplier_reference
         varchar channel
-        varchar currency
-        text notes
+        char currency
     }
 
     ACQUISITION_LINES {
         int id PK
         int acquisition_id FK
-        int card_print_id FK
-        int owner_id
-        int location_id
+        int inventory_item_id FK
         int language_id FK
         int quantity
         numeric unit_cost
@@ -114,60 +138,47 @@ erDiagram
         date sold_at
         varchar buyer_reference
         varchar channel
-        varchar currency
-        text notes
+        char currency
     }
 
     SALES_LINES {
         int id PK
         int sale_id FK
-        int card_print_id FK
-        int owner_id
-        int location_id
+        int inventory_item_id FK
         int language_id FK
         int quantity
         numeric unit_sale_price
         numeric fees
         numeric shipping
-    MARKETPLACES {
-        int id PK
-        varchar name
-        varchar slug
-        text base_url
-        boolean is_active
     }
 
-    EXTERNAL_LISTINGS {
-        int id PK
-        int marketplace_id FK
-        int inventory_card_print_id FK
-        int inventory_owner_id FK
-        int inventory_location_id FK
-        varchar external_listing_id
-        varchar listing_status
-        numeric listed_price
-        char currency
-        int quantity_listed
-        timestamptz synced_at
-        text url
-    }
-
+    ERAS ||--o{ SETS : categorizes
     POKEMON ||--o{ CARD_PRINTS : has
     SETS ||--o{ CARD_PRINTS : contains
-    ERAS ||--o{ SETS : categorizes
     CARD_TYPES ||--o{ CARD_PRINTS : classifies
+
     CARD_PRINTS ||--o{ CARD_PRINT_LANGUAGES : printed_in
     LANGUAGES ||--o{ CARD_PRINT_LANGUAGES : available_as
+
     CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
-    LOCATIONS ||--o{ INVENTORY_ITEMS : stores
-    CARD_CONDITIONS ||--o{ INVENTORY_ITEMS : conditions
+    USERS ||--o{ INVENTORY_ITEMS : owns
+    LOCATIONS ||--o{ INVENTORY_ITEMS : stored_in
+    CARD_CONDITIONS ||--o{ INVENTORY_ITEMS : conditioned_as
     INVENTORY_ITEMS ||--o{ INVENTORY_MOVEMENTS : moves_through
-    ACQUISITIONS ||--o{ ACQUISITION_LINES : has
-    SALES ||--o{ SALES_LINES : has
-    INVENTORY_ITEMS ||--o{ ACQUISITION_LINES : procured_as
-    INVENTORY_ITEMS ||--o{ SALES_LINES : sold_from
-    LANGUAGES ||--o{ ACQUISITION_LINES : acquired_language
-    LANGUAGES ||--o{ SALES_LINES : sold_language
+
     MARKETPLACES ||--o{ EXTERNAL_LISTINGS : hosts
     INVENTORY_ITEMS ||--o{ EXTERNAL_LISTINGS : listed_as
+
+    ACQUISITIONS ||--o{ ACQUISITION_LINES : has
+    INVENTORY_ITEMS ||--o{ ACQUISITION_LINES : procured_as
+    LANGUAGES ||--o{ ACQUISITION_LINES : acquired_language
+
+    SALES ||--o{ SALES_LINES : has
+    INVENTORY_ITEMS ||--o{ SALES_LINES : sold_from
+    LANGUAGES ||--o{ SALES_LINES : sold_language
 ```
+
+## Notes
+
+- `cardmarket_listings`, `reporting_avg_acquisition_cost`, and `reporting_profitability_by_card_set_language` are SQL views derived from these entities.
+- Inventory quantity synchronization is enforced by triggers and helper functions in `database/schema.sql`.
