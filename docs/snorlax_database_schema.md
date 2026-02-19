@@ -167,8 +167,8 @@ DMG (Damaged)
 
 11. inventory_items
 
-Tracks lot-level inventory by print, owner, location, and condition.
-Each condition (and grade tuple, if present) is a distinct inventory row.
+Tracks per-card inventory at unit granularity by print, owner, location, and condition.
+Each physical card is its own inventory row (never aggregated into lots).
 
 ```sql
 CREATE TABLE inventory_items (
@@ -179,9 +179,9 @@ CREATE TABLE inventory_items (
     condition_id        INTEGER NOT NULL REFERENCES card_conditions(id),
     grade_provider      VARCHAR(100),
     grade_value         NUMERIC(3,1),
-    quantity_on_hand    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_on_hand >= 0),
-    quantity_reserved   INTEGER NOT NULL DEFAULT 0 CHECK (quantity_reserved >= 0),
-    quantity_damaged    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged >= 0),
+    quantity_on_hand    INTEGER NOT NULL DEFAULT 1 CHECK (quantity_on_hand IN (0, 1)),
+    quantity_reserved   INTEGER NOT NULL DEFAULT 0 CHECK (quantity_reserved IN (0, 1)),
+    quantity_damaged    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged IN (0, 1)),
     CONSTRAINT chk_inventory_items_grade_pair
         CHECK ((grade_provider IS NULL) = (grade_value IS NULL)),
     CONSTRAINT chk_inventory_items_grade_range
@@ -192,7 +192,9 @@ CREATE TABLE inventory_items (
                 AND grade_value <= 10.0
                 AND grade_value * 2 = floor(grade_value * 2)
             )
-        )
+        ),
+    CONSTRAINT chk_inventory_items_unit_quantity_balance
+        CHECK (quantity_reserved + quantity_damaged <= quantity_on_hand)
 );
 ```
 
@@ -209,7 +211,7 @@ CREATE TABLE inventory_movements (
 
 );
 
-CREATE UNIQUE INDEX uq_inventory_items_lot_condition_grade
+CREATE INDEX idx_inventory_items_unit_lookup
     ON inventory_items(
         card_print_id,
         owner_id,
@@ -249,7 +251,7 @@ CREATE INDEX idx_inventory_movements_type_occurred_at
 
 Inventory movement model
 
-`inventory_items.quantity_on_hand` is treated as a synchronized aggregate derived from `inventory_movements.quantity_delta`. Stock changes should be recorded by inserting movements (purchase, sale, transfer-in, transfer-out, adjustment), not by directly updating `inventory_items.quantity_on_hand`.
+`inventory_items.quantity_on_hand` is synchronized from `inventory_movements.quantity_delta` and constrained to unit-state values (0 or 1). Stock changes should be recorded by inserting movements (purchase, sale, transfer-in, transfer-out, adjustment), not by directly updating `inventory_items.quantity_on_hand`.
 11. acquisitions
 
 Tracks inbound procurement transactions.
