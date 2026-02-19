@@ -46,13 +46,6 @@ erDiagram
         int language_id FK
     }
 
-    CARDMARKET_LISTINGS {
-        int id PK
-        int card_print_id FK
-        text url
-        boolean is_available
-    }
-
     LOCATIONS {
         int id PK
         varchar name
@@ -68,13 +61,37 @@ erDiagram
         int quantity_damaged
     }
 
+    MARKETPLACES {
+        int id PK
+        varchar name
+        varchar slug
+        text base_url
+        boolean is_active
+    }
+
+    EXTERNAL_LISTINGS {
+        int id PK
+        int marketplace_id FK
+        int inventory_card_print_id FK
+        int inventory_owner_id FK
+        int inventory_location_id FK
+        varchar external_listing_id
+        varchar listing_status
+        numeric listed_price
+        char currency
+        int quantity_listed
+        timestamptz synced_at
+        text url
+    }
+
     POKEMON ||--o{ CARD_PRINTS : has
     SETS ||--o{ CARD_PRINTS : contains
     ERAS ||--o{ SETS : categorizes
     CARD_TYPES ||--o{ CARD_PRINTS : classifies
     CARD_PRINTS ||--o{ CARD_PRINT_LANGUAGES : printed_in
     LANGUAGES ||--o{ CARD_PRINT_LANGUAGES : available_as
-    CARD_PRINTS ||--o{ CARDMARKET_LISTINGS : listed_on
     CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
     LOCATIONS ||--o{ INVENTORY_ITEMS : stores
+    MARKETPLACES ||--o{ EXTERNAL_LISTINGS : hosts
+    INVENTORY_ITEMS ||--o{ EXTERNAL_LISTINGS : listed_as
 ```

@@ -5,6 +5,7 @@
 ![Status](https://img.shields.io/badge/Status-Active-success)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Snorlax](https://img.shields.io/badge/Pokémon-Snorlax-3b4cca)
+
 ## 📘 Project Overview
 
 Snoredex is a normalized database model for tracking all Snorlax Pokémon TCG prints across:
@@ -23,6 +24,12 @@ The schema follows **3rd Normal Form (3NF)** and is designed for:
 - API development
 - Multilingual release tracking
 
+Marketplace support is normalized via:
+
+- `marketplaces` (Cardmarket, eBay, TCGPlayer, etc.)
+- `external_listings` linked to inventory items
+- `cardmarket_listings` compatibility view for legacy reads
+
 ---
 
 ## 🗺 Database ER Diagram
@@ -35,4 +42,8 @@ erDiagram
     CARD_TYPES ||--o{ CARD_PRINTS : classifies
     CARD_PRINTS ||--o{ CARD_PRINT_LANGUAGES : printed_in
     LANGUAGES ||--o{ CARD_PRINT_LANGUAGES : available_as
-    CARD_PRINTS ||--o{ CARDMARKET_LISTINGS : listed_on
+    CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
+    LOCATIONS ||--o{ INVENTORY_ITEMS : stores
+    MARKETPLACES ||--o{ EXTERNAL_LISTINGS : hosts
+    INVENTORY_ITEMS ||--o{ EXTERNAL_LISTINGS : listed_as
+```

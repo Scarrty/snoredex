@@ -4,105 +4,75 @@ This schema converts the flat Excel structure into a normalized relational datab
 
 Goals:
 
-Remove repetition (especially languages and sets)
-
-Support future Pokémon additions
-
-Support multiple print variations
-
-Maintain marketplace references
-
-Enable multilingual release tracking
+- Remove repetition (especially languages and sets)
+- Support future Pokémon additions
+- Support multiple print variations
+- Maintain marketplace references
+- Enable multilingual release tracking
+- Support multiple external marketplaces with one listing model
 
 Entity Relationship Overview
+
 Pokemon ──< CardPrint >── Set
                    │
-                   ├──< CardMarketListing
+                   ├──< InventoryItem >──< ExternalListing >── Marketplace
                    │
                    └──< CardPrintLanguage >── Language
 
 Tables
+
 1. pokemon
 
 Stores Pokémon species.
 
+```sql
 CREATE TABLE pokemon (
     id              SERIAL PRIMARY KEY,
     name            VARCHAR(100) NOT NULL,
     national_dex_no INTEGER NULL
 );
-
-Notes
-
-Currently mostly "Snorlax"
-
-Allows expansion to other Pokémon later
-
-national_dex_no optional
+```
 
 2. eras
 
 Represents historical TCG eras.
 
+```sql
 CREATE TABLE eras (
     id      SERIAL PRIMARY KEY,
     name    VARCHAR(100) NOT NULL
 );
-
-
-Examples:
-
-Original
-
-Neo
-
-EX
-
-Diamond & Pearl
-
-etc.
+```
 
 3. sets
 
 Stores Pokémon TCG sets.
 
+```sql
 CREATE TABLE sets (
     id          SERIAL PRIMARY KEY,
     name        VARCHAR(255) NOT NULL,
     set_code    VARCHAR(20),
     era_id      INTEGER REFERENCES eras(id)
 );
-
-Notes
-
-set_code examples: JU, BS, etc.
-
-Linked to eras
+```
 
 4. card_types
 
 Represents rarity / print classification.
 
+```sql
 CREATE TABLE card_types (
     id      SERIAL PRIMARY KEY,
     name    VARCHAR(100) NOT NULL
 );
-
-
-Examples:
-
-Holo
-
-Non-Holo
-
-Promo
-
-Reverse Holo
+```
 
 5. card_prints
 
 Core table: one row per unique printed card.
 
+```sql
 CREATE TABLE card_prints (
     id              SERIAL PRIMARY KEY,
     pokemon_id      INTEGER NOT NULL REFERENCES pokemon(id),
@@ -111,115 +81,49 @@ CREATE TABLE card_prints (
     type_id         INTEGER REFERENCES card_types(id),
     sort_number     INTEGER
 );
-
-Represents:
-
-One specific card print
-
-One set
-
-One card number
-
-One rarity type
-
-This replaces:
-
-Pokemon
-
-Nr.
-
-Set
-
-Type
-
-Sort Nr.
+```
 
 6. languages
 
 Stores supported card languages.
 
+```sql
 CREATE TABLE languages (
     id      SERIAL PRIMARY KEY,
     code    VARCHAR(20) UNIQUE NOT NULL,
     name    VARCHAR(100) NOT NULL
 );
+```
 
-Example entries
-code	name
-JP	Japanese
-EN	English
-DE	German
-FR	French
-IT	Italian
-ES	Spanish
-LATM	Latin American Spanish
-NL	Dutch
-RU	Russian
-PL	Polish
-KOR	Korean
-THAI	Thai
-IND	Indonesian
-S-CHN	Simplified Chinese
-T-CHN	Traditional Chinese
-PT	Portuguese
 7. card_print_languages
 
 Join table to track language availability.
 
+```sql
 CREATE TABLE card_print_languages (
     card_print_id  INTEGER REFERENCES card_prints(id) ON DELETE CASCADE,
     language_id    INTEGER REFERENCES languages(id) ON DELETE CASCADE,
     PRIMARY KEY (card_print_id, language_id)
 );
+```
 
-Logic
-
-If a record exists → card was printed in that language.
-If no record → not released in that language.
-
-This replaces the 16 language columns.
-
-8. cardmarket_listings
-
-Stores marketplace references.
-
-CREATE TABLE cardmarket_listings (
-    id              SERIAL PRIMARY KEY,
-    card_print_id   INTEGER REFERENCES card_prints(id) ON DELETE CASCADE,
-    url             TEXT,
-    is_available    BOOLEAN
-);
-
-
-Replaces:
-
-auf CM auffindbar?
-
-Unnamed: 1 (URL column)
-9. locations
+8. locations
 
 Stores inventory storage channels/containers.
 
+```sql
 CREATE TABLE locations (
     id              SERIAL PRIMARY KEY,
     name            VARCHAR(255) NOT NULL,
     location_type   VARCHAR(100) NOT NULL
 );
+```
 
-Examples:
-
-Binder
-
-Deck box
-
-Warehouse shelf
-
-Sales channel
-
-10. inventory_items
+9. inventory_items
 
 Tracks per-print inventory by owner and location.
 
+```sql
 CREATE TABLE inventory_items (
     card_print_id       INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
     owner_id            INTEGER NOT NULL,
@@ -229,14 +133,65 @@ CREATE TABLE inventory_items (
     quantity_damaged    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged >= 0),
     PRIMARY KEY (card_print_id, owner_id, location_id)
 );
+```
 
-Indexes
+10. marketplaces
 
-CREATE INDEX idx_inventory_items_card_print_id
-    ON inventory_items(card_print_id);
+Normalized list of supported marketplaces (Cardmarket, eBay, TCGPlayer, etc.).
 
-CREATE INDEX idx_inventory_items_owner_location
-    ON inventory_items(owner_id, location_id);
+```sql
+CREATE TABLE marketplaces (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(50) NOT NULL UNIQUE,
+    base_url TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
 
-CREATE INDEX idx_inventory_items_quantity_on_hand
-    ON inventory_items(quantity_on_hand);
+11. external_listings
+
+Generic listing model linked to inventory items.
+
+```sql
+CREATE TABLE external_listings (
+    id SERIAL PRIMARY KEY,
+    marketplace_id INTEGER NOT NULL REFERENCES marketplaces(id),
+    inventory_card_print_id INTEGER NOT NULL,
+    inventory_owner_id INTEGER NOT NULL,
+    inventory_location_id INTEGER NOT NULL,
+    external_listing_id VARCHAR(255) NOT NULL,
+    listing_status VARCHAR(30) NOT NULL DEFAULT 'active',
+    listed_price NUMERIC(12,2),
+    currency CHAR(3),
+    quantity_listed INTEGER,
+    synced_at TIMESTAMPTZ,
+    url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (inventory_card_print_id, inventory_owner_id, inventory_location_id)
+        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+);
+```
+
+12. cardmarket_listings (compatibility view)
+
+Legacy read model maintained as a view to avoid breaking existing queries.
+
+```sql
+CREATE VIEW cardmarket_listings AS
+SELECT
+    el.id,
+    el.inventory_card_print_id AS card_print_id,
+    el.url,
+    (el.listing_status IN ('active', 'paused') AND COALESCE(el.quantity_listed, 0) > 0) AS is_available
+FROM external_listings el
+JOIN marketplaces m ON m.id = el.marketplace_id
+WHERE m.slug = 'cardmarket';
+```
+
+Migration
+
+Use `database/migrations/20260219_external_listings.sql` to migrate from a physical
+`cardmarket_listings` table to the normalized model and recreate `cardmarket_listings`
+as a compatibility view.
