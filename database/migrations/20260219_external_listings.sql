@@ -19,9 +19,7 @@ ON CONFLICT (slug) DO NOTHING;
 CREATE TABLE IF NOT EXISTS external_listings (
     id SERIAL PRIMARY KEY,
     marketplace_id INTEGER NOT NULL REFERENCES marketplaces(id),
-    inventory_card_print_id INTEGER NOT NULL,
-    inventory_owner_id INTEGER NOT NULL,
-    inventory_location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
     external_listing_id VARCHAR(255) NOT NULL,
     listing_status VARCHAR(30) NOT NULL DEFAULT 'active'
         CHECK (listing_status IN ('draft', 'active', 'paused', 'sold', 'ended', 'error')),
@@ -32,10 +30,6 @@ CREATE TABLE IF NOT EXISTS external_listings (
     url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_external_listings_inventory_item
-        FOREIGN KEY (inventory_card_print_id, inventory_owner_id, inventory_location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
-        ON DELETE CASCADE,
     CONSTRAINT uq_external_listings_marketplace_listing_id
         UNIQUE (marketplace_id, external_listing_id)
 );
@@ -44,7 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_external_listings_marketplace_id
     ON external_listings(marketplace_id);
 
 CREATE INDEX IF NOT EXISTS idx_external_listings_inventory_item
-    ON external_listings(inventory_card_print_id, inventory_owner_id, inventory_location_id);
+    ON external_listings(inventory_item_id);
 
 CREATE INDEX IF NOT EXISTS idx_external_listings_status
     ON external_listings(listing_status);
