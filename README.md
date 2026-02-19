@@ -3,7 +3,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Relational_DB-336791?logo=postgresql&logoColor=white)
 ![Normalized](https://img.shields.io/badge/Schema-3NF-blue)
 ![Status](https://img.shields.io/badge/Status-Active-success)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/Schema_License-CC_BY--NC_4.0-orange)
 ![Snorlax](https://img.shields.io/badge/Pokémon-Snorlax-3b4cca)
 
 ## 📘 Project Overview
@@ -22,6 +22,20 @@ Marketplace support is normalized via:
 
 - `marketplaces` (Cardmarket, eBay, TCGPlayer, etc.)
 - `external_listings` linked to inventory items
+
+
+## ⚖️ Licensing
+
+The Snoredex **database schema artifacts** are licensed under **CC BY-NC 4.0** (Attribution-NonCommercial 4.0 International).
+
+Covered artifacts include:
+
+- `database/schema.sql`
+- `database/migrations/`
+- `docs/snorlax_database_schema.md`
+- `docs/er_diagram.md`
+
+See [`LICENSE-DB-SCHEMA-CC-BY-NC-4.0.md`](LICENSE-DB-SCHEMA-CC-BY-NC-4.0.md) for details.
 
 ## 🗺 Database ER Diagram
 
