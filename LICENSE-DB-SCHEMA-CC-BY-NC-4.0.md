@@ -6,7 +6,6 @@ The Snoredex **database schema artifacts** are licensed under the
 This applies to the following files and directories in this repository:
 
 - `database/schema.sql`
-- `database/migrations/`
 - `docs/snorlax_database_schema.md`
 - `docs/er_diagram.md`
 

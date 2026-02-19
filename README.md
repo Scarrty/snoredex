@@ -31,7 +31,6 @@ The Snoredex **database schema artifacts** are licensed under **CC BY-NC 4.0** (
 Covered artifacts include:
 
 - `database/schema.sql`
-- `database/migrations/`
 - `docs/snorlax_database_schema.md`
 - `docs/er_diagram.md`
 
