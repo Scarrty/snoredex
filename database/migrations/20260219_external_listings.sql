@@ -36,51 +36,6 @@ CREATE TABLE IF NOT EXISTS external_listings (
         UNIQUE (marketplace_id, external_listing_id)
 );
 
--- Preserve legacy cardmarket listing rows, if present.
-ALTER TABLE IF EXISTS cardmarket_listings RENAME TO cardmarket_listings_legacy;
-
--- Migrate legacy data where there is an exact matching inventory item for owner/location defaults.
--- Adjust owner/location defaults if your deployment uses different canonical values.
-INSERT INTO external_listings (
-    marketplace_id,
-    inventory_card_print_id,
-    inventory_owner_id,
-    inventory_location_id,
-    external_listing_id,
-    listing_status,
-    quantity_listed,
-    synced_at,
-    url
-)
-SELECT
-    m.id,
-    cml.card_print_id,
-    1,
-    1,
-    COALESCE(NULLIF(split_part(cml.url, '/', array_length(string_to_array(cml.url, '/'), 1)), ''), 'legacy-' || cml.id::TEXT),
-    CASE WHEN cml.is_available THEN 'active' ELSE 'ended' END,
-    CASE WHEN cml.is_available THEN 1 ELSE 0 END,
-    NOW(),
-    cml.url
-FROM cardmarket_listings_legacy cml
-JOIN marketplaces m ON m.slug = 'cardmarket'
-JOIN inventory_items ii
-    ON ii.card_print_id = cml.card_print_id
-   AND ii.owner_id = 1
-   AND ii.location_id = 1
-ON CONFLICT (marketplace_id, external_listing_id) DO NOTHING;
-
-DROP VIEW IF EXISTS cardmarket_listings;
-CREATE VIEW cardmarket_listings AS
-SELECT
-    el.id,
-    el.inventory_card_print_id AS card_print_id,
-    el.url,
-    (el.listing_status IN ('active', 'paused') AND COALESCE(el.quantity_listed, 0) > 0) AS is_available
-FROM external_listings el
-JOIN marketplaces m ON m.id = el.marketplace_id
-WHERE m.slug = 'cardmarket';
-
 CREATE INDEX IF NOT EXISTS idx_external_listings_marketplace_id
     ON external_listings(marketplace_id);
 
