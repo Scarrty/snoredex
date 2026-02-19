@@ -10,15 +10,13 @@
 
 Snoredex is a normalized PostgreSQL schema for tracking Snorlax TCG card prints, unit inventory, acquisitions/sales economics, and external marketplace listings.
 
-The current schema includes:
+The repository now includes a monorepo web-application scaffold that follows the implementation plan in `docs/web_app_implementation_plan.md`:
 
-- Core card taxonomy (`pokemon`, `eras`, `sets`, `card_types`, `card_prints`)
-- Print language availability (`languages`, `card_print_languages`)
-- User-owned, condition-aware inventory (`users`, `inventory_items`, `locations`, `card_conditions`)
-- Immutable movement ledger with quantity synchronization (`inventory_movements` + trigger/functions)
-- Procurement and sales documents (`acquisitions`, `acquisition_lines`, `sales`, `sales_lines`)
-- Marketplace integrations (`marketplaces`, `external_listings`, `cardmarket_listings` compatibility view)
-- Reporting views for average acquisition cost and profitability by card/set/language
+- `apps/api`: NestJS API skeleton with Prisma wiring and `/api/v1/health`.
+- `apps/web`: Next.js App Router skeleton with route scaffolds for MVP pages.
+- `packages/api-contract`: placeholder for shared contracts.
+- `packages/eslint-config`: placeholder for shared lint config.
+- `docker-compose.yml`: local Postgres + app containers.
 
 ## 🧠 Schema highlights
 
@@ -26,6 +24,25 @@ The current schema includes:
 - **Unit-level inventory discipline:** inventory rows represent unit cards (`quantity_on_hand`, `quantity_reserved`, `quantity_damaged` constrained to 0/1).
 - **Data quality constraints:** language codes, currency codes, set code format, listing uniqueness, and grade pairing/range are validated in-schema.
 - **Reporting-ready:** built-in views support weighted acquisition cost and realized profitability rollups.
+
+## 🚀 Quick Start
+
+1. Start PostgreSQL and initialize from `database/schema.sql`:
+   ```bash
+   docker compose up -d postgres
+   ```
+2. Install workspace dependencies:
+   ```bash
+   corepack enable
+   pnpm install
+   ```
+3. Run both apps:
+   ```bash
+   pnpm dev
+   ```
+4. Open:
+   - Web: `http://localhost:3000`
+   - API health endpoint: `http://localhost:3001/api/v1/health`
 
 ## 🗺 Database ER Diagram
 
@@ -37,6 +54,7 @@ The maintained ER diagram lives in [`docs/er_diagram.md`](docs/er_diagram.md).
 - [`docs/er_diagram.md`](docs/er_diagram.md): Mermaid ER diagram aligned to the SQL schema
 - [`docs/snorlax.md`](docs/snorlax.md): source spreadsheet structure (`snorlax_incl jp.xlsx`)
 - [`database/schema.sql`](database/schema.sql): source of truth DDL, triggers, views, and comments
+- [`docs/web_app_implementation_plan.md`](docs/web_app_implementation_plan.md): execution plan for API + web buildout
 
 ## ⚖️ Licensing
 
