@@ -59,21 +59,55 @@ CREATE TABLE locations (
     location_type VARCHAR(100) NOT NULL
 );
 
+CREATE TABLE card_conditions (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    sort_order INTEGER NOT NULL UNIQUE
+);
+
 CREATE TABLE inventory_items (
+    id SERIAL PRIMARY KEY,
     card_print_id INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
     owner_id INTEGER NOT NULL,
     location_id INTEGER NOT NULL REFERENCES locations(id),
+    condition_id INTEGER NOT NULL REFERENCES card_conditions(id),
+    grade_provider VARCHAR(100),
+    grade_value NUMERIC(3,1),
     quantity_on_hand INTEGER NOT NULL DEFAULT 0 CHECK (quantity_on_hand >= 0),
     quantity_reserved INTEGER NOT NULL DEFAULT 0 CHECK (quantity_reserved >= 0),
     quantity_damaged INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged >= 0),
-    PRIMARY KEY (card_print_id, owner_id, location_id)
+    CONSTRAINT chk_inventory_items_grade_pair
+        CHECK ((grade_provider IS NULL) = (grade_value IS NULL)),
+    CONSTRAINT chk_inventory_items_grade_range
+        CHECK (
+            grade_value IS NULL
+            OR (
+                grade_value >= 1.0
+                AND grade_value <= 10.0
+                AND grade_value * 2 = floor(grade_value * 2)
+            )
+        )
 );
+
+CREATE UNIQUE INDEX uq_inventory_items_lot_condition_grade
+    ON inventory_items(
+        card_print_id,
+        owner_id,
+        location_id,
+        condition_id,
+        COALESCE(grade_provider, ''),
+        COALESCE(grade_value, -1.0)
+    );
 
 CREATE INDEX idx_inventory_items_card_print_id
     ON inventory_items(card_print_id);
 
 CREATE INDEX idx_inventory_items_owner_location
     ON inventory_items(owner_id, location_id);
+
+CREATE INDEX idx_inventory_items_condition_id
+    ON inventory_items(condition_id);
 
 CREATE INDEX idx_inventory_items_quantity_on_hand
     ON inventory_items(quantity_on_hand);
