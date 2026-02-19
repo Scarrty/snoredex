@@ -272,16 +272,12 @@ Line-level acquisition economics tied to inventory records.
 CREATE TABLE acquisition_lines (
     id SERIAL PRIMARY KEY,
     acquisition_id INTEGER NOT NULL REFERENCES acquisitions(id) ON DELETE CASCADE,
-    card_print_id INTEGER NOT NULL,
-    owner_id INTEGER NOT NULL,
-    location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
     language_id INTEGER REFERENCES languages(id),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_cost NUMERIC(12, 2) NOT NULL CHECK (unit_cost >= 0),
     fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
-    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
-    FOREIGN KEY (card_print_id, owner_id, location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0)
 );
 
 13. sales
@@ -304,16 +300,12 @@ Line-level sales economics tied to inventory records.
 CREATE TABLE sales_lines (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
-    card_print_id INTEGER NOT NULL,
-    owner_id INTEGER NOT NULL,
-    location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
     language_id INTEGER REFERENCES languages(id),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_sale_price NUMERIC(12, 2) NOT NULL CHECK (unit_sale_price >= 0),
     fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
-    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
-    FOREIGN KEY (card_print_id, owner_id, location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0)
 );
 
 15. reporting_avg_acquisition_cost (view)
@@ -341,9 +333,7 @@ Generic listing model linked to inventory items.
 CREATE TABLE external_listings (
     id SERIAL PRIMARY KEY,
     marketplace_id INTEGER NOT NULL REFERENCES marketplaces(id),
-    inventory_card_print_id INTEGER NOT NULL,
-    inventory_owner_id INTEGER NOT NULL,
-    inventory_location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
     external_listing_id VARCHAR(255) NOT NULL,
     listing_status VARCHAR(30) NOT NULL DEFAULT 'active',
     listed_price NUMERIC(12,2),
@@ -352,9 +342,7 @@ CREATE TABLE external_listings (
     synced_at TIMESTAMPTZ,
     url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    FOREIGN KEY (inventory_card_print_id, inventory_owner_id, inventory_location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
@@ -366,10 +354,11 @@ Legacy read model maintained as a view to avoid breaking existing queries.
 CREATE VIEW cardmarket_listings AS
 SELECT
     el.id,
-    el.inventory_card_print_id AS card_print_id,
+    ii.card_print_id,
     el.url,
     (el.listing_status IN ('active', 'paused') AND COALESCE(el.quantity_listed, 0) > 0) AS is_available
 FROM external_listings el
+JOIN inventory_items ii ON ii.id = el.inventory_item_id
 JOIN marketplaces m ON m.id = el.marketplace_id
 WHERE m.slug = 'cardmarket';
 ```

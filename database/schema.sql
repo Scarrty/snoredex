@@ -140,9 +140,7 @@ CREATE TABLE marketplaces (
 CREATE TABLE external_listings (
     id SERIAL PRIMARY KEY,
     marketplace_id INTEGER NOT NULL REFERENCES marketplaces(id),
-    inventory_card_print_id INTEGER NOT NULL,
-    inventory_owner_id INTEGER NOT NULL,
-    inventory_location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
     external_listing_id VARCHAR(255) NOT NULL,
     listing_status VARCHAR(30) NOT NULL DEFAULT 'active'
         CHECK (listing_status IN ('draft', 'active', 'paused', 'sold', 'ended', 'error')),
@@ -153,10 +151,6 @@ CREATE TABLE external_listings (
     url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_external_listings_inventory_item
-        FOREIGN KEY (inventory_card_print_id, inventory_owner_id, inventory_location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
-        ON DELETE CASCADE,
     CONSTRAINT uq_external_listings_marketplace_listing_id
         UNIQUE (marketplace_id, external_listing_id)
 );
@@ -165,10 +159,11 @@ CREATE TABLE external_listings (
 CREATE VIEW cardmarket_listings AS
 SELECT
     el.id,
-    el.inventory_card_print_id AS card_print_id,
+    ii.card_print_id,
     el.url,
     (el.listing_status IN ('active', 'paused') AND COALESCE(el.quantity_listed, 0) > 0) AS is_available
 FROM external_listings el
+JOIN inventory_items ii ON ii.id = el.inventory_item_id
 JOIN marketplaces m ON m.id = el.marketplace_id
 WHERE m.slug = 'cardmarket';
 
@@ -297,23 +292,19 @@ CREATE TABLE acquisitions (
 CREATE TABLE acquisition_lines (
     id SERIAL PRIMARY KEY,
     acquisition_id INTEGER NOT NULL REFERENCES acquisitions(id) ON DELETE CASCADE,
-    card_print_id INTEGER NOT NULL,
-    owner_id INTEGER NOT NULL,
-    location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
     language_id INTEGER REFERENCES languages(id),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_cost NUMERIC(12, 2) NOT NULL CHECK (unit_cost >= 0),
     fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
-    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
-    FOREIGN KEY (card_print_id, owner_id, location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0)
 );
 
 CREATE INDEX idx_acquisition_lines_acquisition_id
     ON acquisition_lines(acquisition_id);
 
 CREATE INDEX idx_acquisition_lines_inventory
-    ON acquisition_lines(card_print_id, owner_id, location_id);
+    ON acquisition_lines(inventory_item_id);
 
 CREATE TABLE sales (
     id SERIAL PRIMARY KEY,
@@ -327,29 +318,25 @@ CREATE TABLE sales (
 CREATE TABLE sales_lines (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
-    card_print_id INTEGER NOT NULL,
-    owner_id INTEGER NOT NULL,
-    location_id INTEGER NOT NULL,
+    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
     language_id INTEGER REFERENCES languages(id),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_sale_price NUMERIC(12, 2) NOT NULL CHECK (unit_sale_price >= 0),
     fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
-    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
-    FOREIGN KEY (card_print_id, owner_id, location_id)
-        REFERENCES inventory_items(card_print_id, owner_id, location_id)
+    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0)
 );
 
 CREATE INDEX idx_sales_lines_sale_id
     ON sales_lines(sale_id);
 
 CREATE INDEX idx_sales_lines_inventory
-    ON sales_lines(card_print_id, owner_id, location_id);
+    ON sales_lines(inventory_item_id);
 
 CREATE VIEW reporting_avg_acquisition_cost AS
 SELECT
-    al.card_print_id,
-    al.owner_id,
-    al.location_id,
+    ii.card_print_id,
+    ii.owner_id,
+    ii.location_id,
     al.language_id,
     SUM(al.quantity) AS total_acquired_qty,
     CASE
@@ -357,10 +344,11 @@ SELECT
         ELSE SUM((al.quantity * al.unit_cost) + al.fees + al.shipping) / SUM(al.quantity)
     END AS avg_unit_cost
 FROM acquisition_lines al
+JOIN inventory_items ii ON ii.id = al.inventory_item_id
 GROUP BY
-    al.card_print_id,
-    al.owner_id,
-    al.location_id,
+    ii.card_print_id,
+    ii.owner_id,
+    ii.location_id,
     al.language_id;
 
 CREATE VIEW reporting_profitability_by_card_set_language AS
@@ -378,13 +366,14 @@ SELECT
     SUM((sl.quantity * sl.unit_sale_price) - sl.fees - sl.shipping)
         - SUM(sl.quantity * COALESCE(rac.avg_unit_cost, 0)) AS realized_profit
 FROM sales_lines sl
-JOIN card_prints cp ON cp.id = sl.card_print_id
+JOIN inventory_items ii ON ii.id = sl.inventory_item_id
+JOIN card_prints cp ON cp.id = ii.card_print_id
 JOIN sets s ON s.id = cp.set_id
 LEFT JOIN languages l ON l.id = sl.language_id
 LEFT JOIN reporting_avg_acquisition_cost rac
-    ON rac.card_print_id = sl.card_print_id
-    AND rac.owner_id = sl.owner_id
-    AND rac.location_id = sl.location_id
+    ON rac.card_print_id = ii.card_print_id
+    AND rac.owner_id = ii.owner_id
+    AND rac.location_id = ii.location_id
     AND (rac.language_id IS NOT DISTINCT FROM sl.language_id)
 GROUP BY
     cp.id,
@@ -397,7 +386,7 @@ CREATE INDEX idx_external_listings_marketplace_id
     ON external_listings(marketplace_id);
 
 CREATE INDEX idx_external_listings_inventory_item
-    ON external_listings(inventory_card_print_id, inventory_owner_id, inventory_location_id);
+    ON external_listings(inventory_item_id);
 
 CREATE INDEX idx_external_listings_status
     ON external_listings(listing_status);
