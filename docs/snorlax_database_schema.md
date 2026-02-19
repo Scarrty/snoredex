@@ -2,354 +2,74 @@
 <!-- Database schema artifact licensed under CC BY-NC 4.0:
      https://creativecommons.org/licenses/by-nc/4.0/ -->
 
-Overview
-
-This schema converts the flat Excel structure into a normalized relational database model.
-
-Goals:
-
-- Remove repetition (especially languages and sets)
-- Support future Pokémon additions
-- Support multiple print variations
-- Maintain marketplace references
-- Enable multilingual release tracking
-- Support multiple external marketplaces with one listing model
+# Snoredex Database Schema
 
-Track procurement and sales economics
-
-Entity Relationship Overview
-
-Pokemon ──< CardPrint >── Set
-                   │
-                   ├──< InventoryItem >──< ExternalListing >── Marketplace
-                   │
-                   ├──< CardPrintLanguage >── Language
-                   │
-                   ├──< InventoryItem >── Location
-                   │
-                   ├──< AcquisitionLine >── Acquisition
-                   │
-                   └──< SalesLine >── Sale
-
-Tables
-
-1. pokemon
+This document summarizes the normalized PostgreSQL schema defined in `database/schema.sql`.
 
-Stores Pokémon species.
+## Design goals
 
-```sql
-CREATE TABLE pokemon (
-    id              SERIAL PRIMARY KEY,
-    name            VARCHAR(100) NOT NULL,
-    national_dex_no INTEGER NULL
-);
-```
+- Keep card taxonomy normalized and extensible.
+- Track unit-level inventory by owner, location, and condition.
+- Enforce immutable stock movement history.
+- Model acquisition and sales economics for reporting.
+- Support external marketplace listing synchronization.
 
-2. eras
+## Schema overview
 
-Represents historical TCG eras.
+### Core reference entities
 
-```sql
-CREATE TABLE eras (
-    id      SERIAL PRIMARY KEY,
-    name    VARCHAR(100) NOT NULL
-);
-```
+- `users`: inventory owners / operators.
+- `pokemon`: species master data.
+- `eras`: set grouping eras.
+- `sets`: TCG set metadata (`set_code`, optional `era_id`).
+- `card_types`: print/variant typing.
+- `card_prints`: unique prints by `(pokemon_id, set_id, card_number, type_id)`.
+- `languages`: normalized language/locale codes.
+- `card_print_languages`: many-to-many language availability per print.
+- `locations`: physical/logical storage locations.
+- `card_conditions`: condition reference data.
 
-3. sets
+### Inventory & movement ledger
 
-Stores Pokémon TCG sets.
+- `inventory_items`: unit inventory rows with owner/location/condition and optional grading.
+- `inventory_movements`: immutable ledger of signed quantity deltas.
 
-```sql
-CREATE TABLE sets (
-    id          SERIAL PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    set_code    VARCHAR(20),
-    era_id      INTEGER REFERENCES eras(id)
-);
-```
+Key rules:
 
-4. card_types
+- `quantity_on_hand` is synchronized from movement inserts.
+- Direct `quantity_on_hand` updates are blocked unless internal sync flag is set by trigger function.
+- `inventory_movements` rows are immutable (update/delete blocked).
+- Quantity cannot become negative.
 
-Represents rarity / print classification.
+### Marketplace integration
 
-```sql
-CREATE TABLE card_types (
-    id      SERIAL PRIMARY KEY,
-    name    VARCHAR(100) NOT NULL
-);
-```
+- `marketplaces`: configured marketplace providers.
+- `external_listings`: marketplace listing records mapped to inventory items.
+- `cardmarket_listings` view: compatibility projection for legacy Cardmarket consumers.
 
-5. card_prints
+### Procurement & sales
 
-Core table: one row per unique printed card.
+- `acquisitions` + `acquisition_lines`: purchase headers/lines.
+- `sales` + `sales_lines`: sales headers/lines.
+- Both line tables link to `inventory_items`; optional `language_id` tracks language-level economics.
 
-```sql
-CREATE TABLE card_prints (
-    id              SERIAL PRIMARY KEY,
-    pokemon_id      INTEGER NOT NULL REFERENCES pokemon(id),
-    set_id          INTEGER NOT NULL REFERENCES sets(id),
-    card_number     VARCHAR(50) NOT NULL,
-    type_id         INTEGER REFERENCES card_types(id),
-    sort_number     INTEGER
-);
-```
+### Reporting views
 
-6. languages
-
-Stores supported card languages.
+- `reporting_avg_acquisition_cost`: weighted average acquisition cost by card/user/location/language.
+- `reporting_profitability_by_card_set_language`: set/language profitability rollup from sales and acquisition costs.
 
-```sql
-CREATE TABLE languages (
-    id      SERIAL PRIMARY KEY,
-    code    VARCHAR(20) UNIQUE NOT NULL,
-    name    VARCHAR(100) NOT NULL
-);
-```
-
-7. card_print_languages
-
-Join table to track language availability.
-
-```sql
-CREATE TABLE card_print_languages (
-    card_print_id  INTEGER REFERENCES card_prints(id) ON DELETE CASCADE,
-    language_id    INTEGER REFERENCES languages(id) ON DELETE CASCADE,
-    PRIMARY KEY (card_print_id, language_id)
-);
-```
-
-8. locations
-
-Stores inventory storage channels/containers.
-
-```sql
-CREATE TABLE locations (
-    id              SERIAL PRIMARY KEY,
-    name            VARCHAR(255) NOT NULL,
-    location_type   VARCHAR(100) NOT NULL
-);
-```
-
-Examples:
-
-Binder
-
-Deck box
-
-Warehouse shelf
-
-Sales channel
-
-10. card_conditions
-9. inventory_items
-
-Reference table for card condition standards.
-
-CREATE TABLE card_conditions (
-    id          SERIAL PRIMARY KEY,
-    code        VARCHAR(20) UNIQUE NOT NULL,
-    name        VARCHAR(100) NOT NULL,
-    sort_order  INTEGER NOT NULL UNIQUE
-);
-
-Examples:
-
-NM (Near Mint)
-
-LP (Lightly Played)
-
-MP (Moderately Played)
-
-HP (Heavily Played)
-
-DMG (Damaged)
-
-11. inventory_items
-
-Tracks per-card inventory at unit granularity by print, owner, location, and condition.
-Each physical card is its own inventory row (never aggregated into lots).
-
-```sql
-CREATE TABLE inventory_items (
-    id                  SERIAL PRIMARY KEY,
-    card_print_id       INTEGER NOT NULL REFERENCES card_prints(id) ON DELETE CASCADE,
-    owner_id            INTEGER NOT NULL,
-    location_id         INTEGER NOT NULL REFERENCES locations(id),
-    condition_id        INTEGER NOT NULL REFERENCES card_conditions(id),
-    grade_provider      VARCHAR(100),
-    grade_value         NUMERIC(3,1),
-    quantity_on_hand    INTEGER NOT NULL DEFAULT 1 CHECK (quantity_on_hand IN (0, 1)),
-    quantity_reserved   INTEGER NOT NULL DEFAULT 0 CHECK (quantity_reserved IN (0, 1)),
-    quantity_damaged    INTEGER NOT NULL DEFAULT 0 CHECK (quantity_damaged IN (0, 1)),
-    CONSTRAINT chk_inventory_items_grade_pair
-        CHECK ((grade_provider IS NULL) = (grade_value IS NULL)),
-    CONSTRAINT chk_inventory_items_grade_range
-        CHECK (
-            grade_value IS NULL
-            OR (
-                grade_value >= 1.0
-                AND grade_value <= 10.0
-                AND grade_value * 2 = floor(grade_value * 2)
-            )
-        ),
-    CONSTRAINT chk_inventory_items_unit_quantity_balance
-        CHECK (quantity_reserved + quantity_damaged <= quantity_on_hand)
-);
-```
-
-CREATE TABLE inventory_movements (
-    id                  SERIAL PRIMARY KEY,
-    inventory_item_id   INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
-    movement_type       VARCHAR(50) NOT NULL CHECK (movement_type IN ('purchase', 'sale', 'transfer-in', 'transfer-out', 'adjustment')),
-    quantity_delta      INTEGER NOT NULL CHECK (quantity_delta <> 0),
-    occurred_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    reference_type      VARCHAR(100),
-    reference_id        VARCHAR(100),
-    notes               TEXT,
-    created_by          VARCHAR(100)
-
-);
-
-CREATE INDEX idx_inventory_items_unit_lookup
-    ON inventory_items(
-        card_print_id,
-        owner_id,
-        location_id,
-        condition_id,
-        COALESCE(grade_provider, ''),
-        COALESCE(grade_value, -1.0)
-    );
-
-Indexes
-10. marketplaces
-
-Normalized list of supported marketplaces (Cardmarket, eBay, TCGPlayer, etc.).
+## Constraints and quality checks
 
-```sql
-CREATE TABLE marketplaces (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    slug VARCHAR(50) NOT NULL UNIQUE,
-    base_url TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-```
+- Uppercase language code format enforcement.
+- Currency format checks (`^[A-Z]{3}$`) across transactional/listing tables.
+- Set code format checks.
+- Grading pair and half-step range validation (`1.0` to `10.0`, 0.5 increments).
+- Unique business keys for key dimensions and listing identity.
 
-CREATE INDEX idx_inventory_items_condition_id
-    ON inventory_items(condition_id);
+## Operational notes
 
-CREATE INDEX idx_inventory_items_quantity_on_hand
-    ON inventory_items(quantity_on_hand);
+- Source of truth: `database/schema.sql`.
+- `update_timestamp()` and table triggers maintain `updated_at` on mutable tables.
+- All table/column comments are embedded in SQL for schema self-documentation.
 
-CREATE INDEX idx_inventory_movements_item_occurred_at
-    ON inventory_movements(inventory_item_id, occurred_at);
-
-CREATE INDEX idx_inventory_movements_type_occurred_at
-    ON inventory_movements(movement_type, occurred_at);
-
-
-Inventory movement model
-
-`inventory_items.quantity_on_hand` is synchronized from `inventory_movements.quantity_delta` and constrained to unit-state values (0 or 1). Stock changes should be recorded by inserting movements (purchase, sale, transfer-in, transfer-out, adjustment), not by directly updating `inventory_items.quantity_on_hand`.
-11. acquisitions
-
-Tracks inbound procurement transactions.
-
-CREATE TABLE acquisitions (
-    id SERIAL PRIMARY KEY,
-    acquired_at DATE NOT NULL,
-    supplier_reference VARCHAR(255),
-    channel VARCHAR(100),
-    currency VARCHAR(3) NOT NULL,
-    notes TEXT
-);
-
-Examples
-
-Supplier reference: cardmarket_seller_123, local_store_foo
-
-Channel: Cardmarket, eBay, local
-
-12. acquisition_lines
-
-Line-level acquisition economics tied to inventory records.
-
-CREATE TABLE acquisition_lines (
-    id SERIAL PRIMARY KEY,
-    acquisition_id INTEGER NOT NULL REFERENCES acquisitions(id) ON DELETE CASCADE,
-    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
-    language_id INTEGER REFERENCES languages(id),
-    quantity INTEGER NOT NULL CHECK (quantity > 0),
-    unit_cost NUMERIC(12, 2) NOT NULL CHECK (unit_cost >= 0),
-    fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
-    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0)
-);
-
-13. sales
-
-Tracks outbound card sales transactions.
-
-CREATE TABLE sales (
-    id SERIAL PRIMARY KEY,
-    sold_at DATE NOT NULL,
-    buyer_reference VARCHAR(255),
-    channel VARCHAR(100),
-    currency VARCHAR(3) NOT NULL,
-    notes TEXT
-);
-
-14. sales_lines
-
-Line-level sales economics tied to inventory records.
-
-CREATE TABLE sales_lines (
-    id SERIAL PRIMARY KEY,
-    sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
-    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
-    language_id INTEGER REFERENCES languages(id),
-    quantity INTEGER NOT NULL CHECK (quantity > 0),
-    unit_sale_price NUMERIC(12, 2) NOT NULL CHECK (unit_sale_price >= 0),
-    fees NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (fees >= 0),
-    shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0)
-);
-
-15. reporting_avg_acquisition_cost (view)
-
-Computes average unit cost (inclusive of line fees/shipping allocations) per inventory key and language.
-
-16. reporting_profitability_by_card_set_language (view)
-
-Aggregates sold quantity, gross revenue, COGS, gross margin, and realized profit by:
-
-Card print
-
-Set
-
-Language
-
-Realized profit logic:
-
-Revenue net of sale-side fees and shipping, minus average acquisition cost for sold quantities.
-11. external_listings
-
-Generic listing model linked to inventory items.
-
-```sql
-CREATE TABLE external_listings (
-    id SERIAL PRIMARY KEY,
-    marketplace_id INTEGER NOT NULL REFERENCES marketplaces(id),
-    inventory_item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
-    external_listing_id VARCHAR(255) NOT NULL,
-    listing_status VARCHAR(30) NOT NULL DEFAULT 'active',
-    listed_price NUMERIC(12,2),
-    currency CHAR(3),
-    quantity_listed INTEGER,
-    synced_at TIMESTAMPTZ,
-    url TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```
-
-The schema is intended to be initialized directly from `database/schema.sql` for new database setups.
+For relationships, see [`docs/er_diagram.md`](er_diagram.md).

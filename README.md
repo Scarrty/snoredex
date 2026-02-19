@@ -8,21 +8,35 @@
 
 ## 📘 Project Overview
 
-Snoredex is a normalized PostgreSQL schema for tracking Snorlax TCG prints, inventory, procurement/sales activity, and marketplace listings.
+Snoredex is a normalized PostgreSQL schema for tracking Snorlax TCG card prints, unit inventory, acquisitions/sales economics, and external marketplace listings.
 
-The schema is designed for:
+The current schema includes:
 
-- Collection tracking
-- Inventory movement ledgering
-- Procurement and sales profitability reporting
-- Marketplace synchronization
-- Multilingual release tracking
+- Core card taxonomy (`pokemon`, `eras`, `sets`, `card_types`, `card_prints`)
+- Print language availability (`languages`, `card_print_languages`)
+- User-owned, condition-aware inventory (`users`, `inventory_items`, `locations`, `card_conditions`)
+- Immutable movement ledger with quantity synchronization (`inventory_movements` + trigger/functions)
+- Procurement and sales documents (`acquisitions`, `acquisition_lines`, `sales`, `sales_lines`)
+- Marketplace integrations (`marketplaces`, `external_listings`, `cardmarket_listings` compatibility view)
+- Reporting views for average acquisition cost and profitability by card/set/language
 
-Marketplace support is normalized via:
+## 🧠 Schema highlights
 
-- `marketplaces` (Cardmarket, eBay, TCGPlayer, etc.)
-- `external_listings` linked to inventory items
+- **Immutable stock ledger:** `inventory_movements` cannot be updated/deleted. `quantity_on_hand` is synchronized by triggers.
+- **Unit-level inventory discipline:** inventory rows represent unit cards (`quantity_on_hand`, `quantity_reserved`, `quantity_damaged` constrained to 0/1).
+- **Data quality constraints:** language codes, currency codes, set code format, listing uniqueness, and grade pairing/range are validated in-schema.
+- **Reporting-ready:** built-in views support weighted acquisition cost and realized profitability rollups.
 
+## 🗺 Database ER Diagram
+
+The maintained ER diagram lives in [`docs/er_diagram.md`](docs/er_diagram.md).
+
+## 📚 Documentation
+
+- [`docs/snorlax_database_schema.md`](docs/snorlax_database_schema.md): complete table-by-table schema documentation
+- [`docs/er_diagram.md`](docs/er_diagram.md): Mermaid ER diagram aligned to the SQL schema
+- [`docs/snorlax.md`](docs/snorlax.md): source spreadsheet structure (`snorlax_incl jp.xlsx`)
+- [`database/schema.sql`](database/schema.sql): source of truth DDL, triggers, views, and comments
 
 ## ⚖️ Licensing
 
@@ -35,28 +49,3 @@ Covered artifacts include:
 - `docs/er_diagram.md`
 
 See [`LICENSE-DB-SCHEMA-CC-BY-NC-4.0.md`](LICENSE-DB-SCHEMA-CC-BY-NC-4.0.md) for details.
-
-## 🗺 Database ER Diagram
-
-```mermaid
-erDiagram
-    POKEMON ||--o{ CARD_PRINTS : has
-    SETS ||--o{ CARD_PRINTS : contains
-    ERAS ||--o{ SETS : categorizes
-    CARD_TYPES ||--o{ CARD_PRINTS : classifies
-    CARD_PRINTS ||--o{ CARD_PRINT_LANGUAGES : printed_in
-    LANGUAGES ||--o{ CARD_PRINT_LANGUAGES : available_as
-
-    CARD_PRINTS ||--o{ INVENTORY_ITEMS : stocked_as
-    LOCATIONS ||--o{ INVENTORY_ITEMS : stores
-    CARD_CONDITIONS ||--o{ INVENTORY_ITEMS : conditions
-    INVENTORY_ITEMS ||--o{ INVENTORY_MOVEMENTS : moves_through
-
-    INVENTORY_ITEMS ||--o{ ACQUISITION_LINES : procured_as
-    ACQUISITIONS ||--o{ ACQUISITION_LINES : has
-    INVENTORY_ITEMS ||--o{ SALES_LINES : sold_from
-    SALES ||--o{ SALES_LINES : has
-
-    MARKETPLACES ||--o{ EXTERNAL_LISTINGS : hosts
-    INVENTORY_ITEMS ||--o{ EXTERNAL_LISTINGS : listed_as
-```

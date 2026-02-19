@@ -1,41 +1,45 @@
-# Snorlax Data Structure
+# Snorlax Source Spreadsheet Structure
 
-This document describes the structure of `snorlax_incl jp.xlsx`.
+This document describes the source dataset `snorlax_incl jp.xlsx` that informed the initial Snoredex schema modeling.
 
 ## Overview
 
-The file is a structured catalog of Snorlax Pokémon TCG cards.
-
 - 207 rows
 - 25 columns
-- Each row = one unique card print
-- Includes multilingual availability
-- Includes Cardmarket references
+- Each row represents one unique Snorlax card print/version
+- Includes multilingual print availability
+- Includes Cardmarket reference fields
 
-## Core Fields
+## Core columns
 
-- Sort Nr.
-- Pokemon
-- Nr. (Card number)
-- Set
-- Set Code
-- Era
-- Type
+- `Sort Nr.`
+- `Pokemon`
+- `Nr.` (card number)
+- `Set`
+- `Set Code`
+- `Era`
+- `Type`
 
-## Language Columns
+## Language availability columns
 
-Each language column contains:
+Value semantics:
 
-- `1` → card exists in this language
-- empty → not printed in this language
+- `1` = card exists in that language
+- empty cell = no known print in that language
 
 Languages tracked:
 
-JP, T-CHN, S-CHN, IND, THAI, KOR, EN, DE, IT, FR, PT, ES, LATM, NL, RU, PL
+`JP`, `T-CHN`, `S-CHN`, `IND`, `THAI`, `KOR`, `EN`, `DE`, `IT`, `FR`, `PT`, `ES`, `LATM`, `NL`, `RU`, `PL`
 
-## Purpose
+## Marketplace columns
 
-- Collection tracking
-- Multilingual release verification
-- Marketplace linking
-- Structured Snorlax archive
+- Presence/availability marker for Cardmarket
+- Cardmarket product URL
+
+## Role in Snoredex
+
+The spreadsheet acted as the migration input for:
+
+- Normalized card print metadata
+- Language availability mapping
+- Initial marketplace reference normalization
