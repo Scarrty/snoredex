@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: CC-BY-NC-4.0 -->
 # Snorlax Source Spreadsheet Structure
 
 This document describes the source dataset `snorlax_incl jp.xlsx` that informed the initial Snoredex schema modeling.

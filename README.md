@@ -1,9 +1,10 @@
+<!-- SPDX-License-Identifier: CC-BY-NC-4.0 -->
 # 💤 Snoredex
 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Relational_DB-336791?logo=postgresql&logoColor=white)
 ![Normalized](https://img.shields.io/badge/Schema-3NF-blue)
 ![Status](https://img.shields.io/badge/Status-Active-success)
-![License](https://img.shields.io/badge/Schema_License-CC_BY--NC_4.0-orange)
+![License](https://img.shields.io/badge/License-CC_BY--NC_4.0-orange)
 ![Snorlax](https://img.shields.io/badge/Pokémon-Snorlax-3b4cca)
 
 ## 📘 Project Overview
@@ -58,12 +59,8 @@ The maintained ER diagram lives in [`docs/er_diagram.md`](docs/er_diagram.md).
 
 ## ⚖️ Licensing
 
-The Snoredex **database schema artifacts** are licensed under **CC BY-NC 4.0** (Attribution-NonCommercial 4.0 International).
+The Snoredex project is licensed under **CC BY-NC 4.0** (Attribution-NonCommercial 4.0 International).
 
-Covered artifacts include:
-
-- `database/schema.sql`
-- `docs/snorlax_database_schema.md`
-- `docs/er_diagram.md`
+This license applies to the repository contents unless a file explicitly states otherwise.
 
 See [`LICENSE-DB-SCHEMA-CC-BY-NC-4.0.md`](LICENSE-DB-SCHEMA-CC-BY-NC-4.0.md) for details.

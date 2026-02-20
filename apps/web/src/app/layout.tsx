@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-4.0
 import './globals.css';
 import type { ReactNode } from 'react';
 

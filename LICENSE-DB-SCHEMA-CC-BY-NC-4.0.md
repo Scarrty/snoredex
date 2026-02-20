@@ -1,13 +1,10 @@
-# Database Schema License (CC BY-NC 4.0)
+<!-- SPDX-License-Identifier: CC-BY-NC-4.0 -->
+# Project License (CC BY-NC 4.0)
 
-The Snoredex **database schema artifacts** are licensed under the
+The Snoredex project is licensed under the
 **Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
 
-This applies to the following files and directories in this repository:
-
-- `database/schema.sql`
-- `docs/snorlax_database_schema.md`
-- `docs/er_diagram.md`
+This license applies to the repository contents unless a file explicitly states otherwise.
 
 To view a copy of this license, visit:
 <https://creativecommons.org/licenses/by-nc/4.0/>
@@ -17,11 +14,11 @@ Or see the full legal code:
 
 ## Attribution
 
-When sharing or adapting these schema artifacts, provide appropriate attribution to the Snoredex project and include a link to the CC BY-NC 4.0 license.
+When sharing or adapting this project, provide appropriate attribution to the Snoredex project and include a link to the CC BY-NC 4.0 license.
 
 ## Non-commercial use only
 
-You may not use the licensed schema artifacts for commercial purposes.
+You may not use the licensed material for commercial purposes.
 
 ## No additional restrictions
 

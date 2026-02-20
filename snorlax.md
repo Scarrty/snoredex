@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: CC-BY-NC-4.0 -->
 # Snorlax Spreadsheet Documentation
 
 This file documents the source workbook `snorlax_incl jp.xlsx` used as the base input for Snoredex.

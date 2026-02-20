@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-4.0
 import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 

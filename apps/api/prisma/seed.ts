@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-4.0
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
