@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: CC-BY-NC-4.0 -->
 # Web App Implementation Plan (NestJS + Prisma + Next.js + PostgreSQL)
 
 This plan turns the existing Snoredex PostgreSQL schema into a production-ready web application.

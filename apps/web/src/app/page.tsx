@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-4.0
 import Link from 'next/link';
 
 const routes = [

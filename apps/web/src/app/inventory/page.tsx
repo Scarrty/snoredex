@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-4.0
 export default function InventoryPage() {
   return (
     <main>

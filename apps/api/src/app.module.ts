@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-4.0
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
