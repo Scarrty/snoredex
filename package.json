@@ -14,6 +14,10 @@
     "typecheck": "pnpm -r typecheck",
     "format": "pnpm -r format",
     "db:up": "docker compose up -d postgres",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "db:baseline": "pnpm --filter @snoredex/api prisma:migrate:baseline",
+    "db:migrate": "pnpm --filter @snoredex/api prisma:migrate:deploy",
+    "db:seed": "pnpm --filter @snoredex/api prisma:seed",
+    "db:setup": "pnpm db:up && pnpm db:migrate && pnpm db:seed"
   }
 }

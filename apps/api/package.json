@@ -10,8 +10,15 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --check 'src/**/*.ts'",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:migrate": "DATABASE_URL=${DATABASE_URL:-postgresql://snoredex:snoredex@localhost:5432/snoredex} prisma migrate dev",
+    "prisma:migrate:deploy": "DATABASE_URL=${DATABASE_URL:-postgresql://snoredex:snoredex@localhost:5432/snoredex} prisma migrate deploy",
+    "prisma:migrate:baseline": "DATABASE_URL=${DATABASE_URL:-postgresql://snoredex:snoredex@localhost:5432/snoredex} prisma migrate resolve --applied 0001_init",
+    "prisma:migrate:status": "DATABASE_URL=${DATABASE_URL:-postgresql://snoredex:snoredex@localhost:5432/snoredex} prisma migrate status",
+    "prisma:seed": "DATABASE_URL=${DATABASE_URL:-postgresql://snoredex:snoredex@localhost:5432/snoredex} prisma db seed",
+    "prisma:studio": "DATABASE_URL=${DATABASE_URL:-postgresql://snoredex:snoredex@localhost:5432/snoredex} prisma studio"
+  },
+  "prisma": {
+    "seed": "prisma db execute --schema prisma/schema.prisma --file prisma/seed.sql"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.2",

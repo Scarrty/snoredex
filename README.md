@@ -28,20 +28,28 @@ The repository now includes a monorepo web-application scaffold that follows the
 
 ## 🚀 Quick Start
 
-1. Start PostgreSQL and initialize from `database/schema.sql`:
+1. Start PostgreSQL:
    ```bash
-   docker compose up -d postgres
+   pnpm db:up
    ```
 2. Install workspace dependencies:
    ```bash
    corepack enable
    pnpm install
    ```
-3. Run both apps:
+3. If your database was initialized from `database/schema.sql`, baseline the initial Prisma migration once:
+   ```bash
+   pnpm db:baseline
+   ```
+4. Apply Prisma migrations and seed lookup data:
+   ```bash
+   pnpm db:setup
+   ```
+5. Run both apps:
    ```bash
    pnpm dev
    ```
-4. Open:
+6. Open:
    - Web: `http://localhost:3000`
    - API health endpoint: `http://localhost:3001/api/v1/health`
 
