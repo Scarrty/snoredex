@@ -36,13 +36,21 @@
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
+## Execution Plans (PLANS.md)
+
+1. For any non-trivial task, read `PLANS.md` first and follow its schema.
+2. Create or update the relevant plan in `PLANS.md` before implementation starts.
+3. If work deviates from plan, pause implementation and re-plan in `PLANS.md` before continuing.
+4. Record verification evidence according to `PLANS.md` evidence requirements before marking work done.
+5. Precedence for planning/process conflicts is: task-local instructions > `PLANS.md` > this `AGENTS.md`.
+
 ## Task Management
 
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
+1. **Plan First**: Read `PLANS.md`, then create/update the active plan in `PLANS.md` (and mirror a checklist in `tasks/todo.md` when useful)
 2. **Verify Plan**: Check in before starting implementation
-3. **Track Progress**: Mark items complete as you go
+3. **Track Progress**: Mark plan/checklist items complete in `PLANS.md` (and `tasks/todo.md` if used) as you go
 4. **Explain Changes**: High-level summary at each step
-5. **Document Results**: Add review section to `tasks/todo.md`
+5. **Document Results**: Record review/results in `PLANS.md` (and `tasks/todo.md` if used)
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 
 ## Core Principles
