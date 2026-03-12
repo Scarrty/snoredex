@@ -29,6 +29,16 @@ The repository now includes a monorepo web-application scaffold that follows the
 - [ ] Open/update `PLANS.md` for the task.
 - [ ] Execute verification steps and record evidence in `PLANS.md`.
 
+## 📊 Implementation status matrix
+
+| Milestone | Status | Notes |
+| --- | --- | --- |
+| Foundation (DB + API scaffold + app routing) | ✅ Foundation | Core schema, Nest modules, and Next app routes are established. |
+| Web vertical slice (dashboard + catalog read paths) | 🚧 In Progress | Dashboard profitability and catalog browse/detail pages now fetch from API read endpoints. |
+| Auth hardening + route authorization guards | 🚧 In Progress | Login now requires username/password credentials and role-based guard primitives protect write endpoints. |
+| Smoke-test quality gate | 🚧 In Progress | Workspace `test` scripts now run lightweight API/web smoke checks via `pnpm -r test`. |
+| Full transactional UX (inventory/transactions/marketplaces) | ⏳ Not Started | UI surfaces for write flows remain scaffold-only in this cycle. |
+
 ## 🧠 Schema highlights
 
 - **Immutable stock ledger:** `inventory_movements` cannot be updated/deleted. `quantity_on_hand` is synchronized by triggers.

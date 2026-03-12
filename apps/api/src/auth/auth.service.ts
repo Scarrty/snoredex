@@ -12,6 +12,7 @@ type TokenType = 'access' | 'refresh';
 type TokenPayload = {
   sub: number;
   username: string;
+  role: string;
   type: TokenType;
   exp: number;
 };
@@ -20,13 +21,13 @@ type TokenPayload = {
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async login(username: string) {
+  async login(username: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
       select: { id: true, username: true },
     });
 
-    if (!user) {
+    if (!user || !this.verifyCredential(password)) {
       throw new UnauthorizedException('Invalid credentials.');
     }
 
@@ -52,10 +53,21 @@ export class AuthService {
     return { success: true };
   }
 
+  verifyAccessToken(accessToken: string) {
+    return this.verifyToken(accessToken, 'access');
+  }
+
+  private verifyCredential(password: string) {
+    const expectedPassword = process.env.AUTH_PASSWORD ?? 'snoredex-dev-password';
+    return this.safeEqual(password, expectedPassword);
+  }
+
   private issueTokens(userId: number, username: string) {
+    const role = process.env.DEFAULT_AUTH_ROLE ?? 'admin';
     const accessToken = this.signToken({
       sub: userId,
       username,
+      role,
       type: 'access',
       exp: this.expiryFromNow(60 * 15),
     });
@@ -63,6 +75,7 @@ export class AuthService {
     const refreshToken = this.signToken({
       sub: userId,
       username,
+      role,
       type: 'refresh',
       exp: this.expiryFromNow(60 * 60 * 24 * 7),
     });
@@ -99,9 +112,7 @@ export class AuthService {
       .update(payloadEncoded)
       .digest('base64url');
 
-    const validSignature =
-      expectedSignature.length === signature.length &&
-      timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature));
+    const validSignature = this.safeEqual(signature, expectedSignature);
 
     if (!validSignature) {
       throw new UnauthorizedException('Invalid token signature.');
@@ -120,6 +131,10 @@ export class AuthService {
     }
 
     return payload;
+  }
+
+  private safeEqual(a: string, b: string) {
+    return a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
   }
 
   private jwtSecret() {

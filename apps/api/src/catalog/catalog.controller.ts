@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: CC-BY-NC-4.0
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { CatalogService } from './catalog.service';
 
+@Public()
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}

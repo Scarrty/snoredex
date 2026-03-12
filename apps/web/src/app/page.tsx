@@ -14,7 +14,8 @@ const routes = [
 export default function HomePage() {
   return (
     <main>
-      <h1>Snoredex Web App Skeleton</h1>
+      <h1>Snoredex Web App</h1>
+      <p>Initial vertical slice is now available for dashboard metrics and catalog browsing.</p>
       <ul>
         {routes.map(([label, href]) => (
           <li key={href}>
