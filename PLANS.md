@@ -173,3 +173,65 @@ If any criterion is unmet, the plan remains open.
 - What changed: Added a short planning-workflow section in `README.md` with a one-paragraph explanation of `PLANS.md` and a three-item "How to start work" checklist referencing `AGENTS.md` and `PLANS.md` exactly.
 - Verification performed: Ran `rg -n "PLANS.md|AGENTS.md|How to start work" README.md` and `git diff -- README.md PLANS.md tasks/lessons.md` to validate content and scope of changes.
 - Follow-ups: None.
+
+---
+
+# Plan: Repository-wide documentation and implementation state review
+
+## Context / Problem Statement
+- Request: Evaluate the current state of the project against existing documentation and provide a full review.
+- Problem: The repository has multiple documentation sources (README, architecture docs, schema docs, implementation plans) and two applications; there is no current consolidated assessment of alignment, readiness, and gaps.
+- Constraints: Keep findings evidence-based using repository files and executable checks; avoid speculative claims.
+
+## Scope and Non-Goals
+### In Scope
+- Review root/project documentation and compare with current API/web/database implementation.
+- Run available quality checks to validate present build/lint/typecheck status.
+- Produce a written review document with strengths, gaps, risks, and prioritized recommendations.
+
+### Non-Goals
+- Implementing feature fixes or architecture refactors discovered during review.
+- Rewriting all existing docs; only adding a new review artifact and plan updates.
+
+## Assumptions and Risks
+### Assumptions
+- Existing documentation in `README.md`, `docs/`, and schema files represents intended baseline expectations.
+- Workspace dependencies can be installed and checks can run in this environment.
+
+### Risks
+- Risk: Some checks may fail due to environment/dependency issues rather than project quality.
+  - Impact: Could reduce confidence in conclusions.
+  - Mitigation: Record exact command outputs and classify failures clearly.
+- Risk: Review could become too broad and non-actionable.
+  - Impact: Limited practical value.
+  - Mitigation: Provide prioritized, concrete recommendations.
+
+## Implementation Checklist
+- [x] Owner: Codex | Status: done | Action: Gather evidence from key docs/code and run quality checks.
+- [x] Owner: Codex | Status: done | Action: Write comprehensive review in `docs/project_state_review.md`.
+- [x] Owner: Codex | Status: done | Action: Update this plan with verification evidence and review summary.
+
+## Verification Steps and Expected Evidence
+- [x] Check: `pnpm -r lint`
+  - Expected evidence: lint status across workspaces (pass/fail with actionable output).
+  - Evidence captured: Failed in `apps/api` because ESLint v9 could not find `eslint.config.*`.
+- [x] Check: `pnpm -r typecheck`
+  - Expected evidence: TypeScript compile/typecheck status for apps.
+  - Evidence captured: `apps/api` and `apps/web` both completed `tsc --noEmit` successfully.
+- [x] Check: `pnpm -r build`
+  - Expected evidence: Buildability status and surfaced compilation/runtime issues.
+  - Evidence captured: Nest build and Next production build completed successfully.
+- [x] Check: `git diff -- PLANS.md docs/project_state_review.md`
+  - Expected evidence: Diff shows only plan/review documentation additions.
+  - Evidence captured: Diff is limited to new review plan updates plus `docs/project_state_review.md`.
+
+## Rollback / Mitigation Strategy
+- Trigger(s) for rollback: If review document contains incorrect claims or unsupported conclusions.
+- Rollback steps: Amend or revert review commit and regenerate report using verified command/file evidence.
+- Data/config/state restoration needs: None (documentation-only update).
+- Rollback owner: Codex.
+
+## Review Summary
+- What changed: Added a repository-wide assessment in `docs/project_state_review.md` covering alignment strengths, documented gaps, risks, and prioritized actions.
+- Verification performed: Ran `pnpm install`, `pnpm -r lint`, `pnpm -r typecheck`, `pnpm -r build`, and `git diff -- PLANS.md docs/project_state_review.md` to capture objective status evidence.
+- Follow-ups: Address ESLint v9 flat-config migration first, then implement functional web vertical slices and auth hardening milestones.
