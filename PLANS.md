@@ -235,3 +235,85 @@ If any criterion is unmet, the plan remains open.
 - What changed: Added a repository-wide assessment in `docs/project_state_review.md` covering alignment strengths, documented gaps, risks, and prioritized actions.
 - Verification performed: Ran `pnpm install`, `pnpm -r lint`, `pnpm -r typecheck`, `pnpm -r build`, and `git diff -- PLANS.md docs/project_state_review.md` to capture objective status evidence.
 - Follow-ups: Address ESLint v9 flat-config migration first, then implement functional web vertical slices and auth hardening milestones.
+
+---
+
+# Plan: Implement prioritized fixes from project state review
+
+## Context / Problem Statement
+- Request: Propose a concrete implementation plan for all fixes identified in `docs/project_state_review.md`.
+- Problem: The review shows a mismatch between documented project trajectory and shipped behavior: lint quality gate is broken, the web app is largely scaffold-only, auth hardening is incomplete, status visibility is missing in README, and baseline automated tests are not yet in place.
+- Constraints: Execute work with minimal scope per milestone, keep API/web behavior stable while refactoring tooling, and preserve compatibility with current pnpm monorepo + ESLint v9 + existing Nest/Next build flows.
+
+## Scope and Non-Goals
+### In Scope
+- Restore deterministic linting by adopting ESLint v9 flat config across workspaces and CI scripts.
+- Deliver first functional web vertical slice (dashboard metrics read path + catalog browse/read path with basic filters).
+- Harden auth implementation by adding explicit credential verification flow and authorization guard foundations.
+- Add a concise implementation-status matrix to `README.md` aligned to documented milestones.
+- Introduce minimal automated smoke tests for API and web routes and wire them into quality checks.
+
+### Non-Goals
+- Full product-complete web UX for all modules (inventory, transactions, marketplaces, reports) in this cycle.
+- Advanced auth capabilities (MFA, SSO, account recovery, external IdP integration).
+- Full observability/monitoring rollout beyond minimal test + quality gate improvements.
+
+## Assumptions and Risks
+### Assumptions
+- Current API routes from the MVP backlog remain the intended backend contract for initial web vertical slices.
+- No database-breaking schema redesign is required to support dashboard/catalog read-only functionality.
+- CI pipeline can be updated to run revised lint/test commands without external service dependencies.
+
+### Risks
+- Risk: ESLint flat-config migration could create rule/regression churn across apps.
+  - Impact: Delivery delay and noisy diffs.
+  - Mitigation: Start with compatibility baseline, migrate incrementally, enforce via one shared config package.
+- Risk: Web vertical slice may block on API contract gaps or missing client utilities.
+  - Impact: Partial feature delivery.
+  - Mitigation: Add a thin typed API client layer first, then implement dashboard/catalog read-only flows.
+- Risk: Auth hardening can introduce login regressions.
+  - Impact: Access failures and developer friction.
+  - Mitigation: Add targeted auth unit/integration checks before changing token/session behavior.
+- Risk: Smoke tests become flaky in CI.
+  - Impact: Reduced trust in pipeline.
+  - Mitigation: Keep scope deterministic (route and render smoke only), avoid brittle timing/network assumptions.
+
+## Implementation Checklist
+- [ ] Owner: Codex | Status: todo | Action: Baseline current quality gates (`pnpm -r lint`, `pnpm -r typecheck`, `pnpm -r build`, existing tests) and capture before-state evidence for comparison.
+- [ ] Owner: Codex | Status: todo | Action: Implement shared ESLint v9 flat config (root + workspace wiring for `apps/api` and `apps/web`) and update lint scripts/CI invocation.
+- [ ] Owner: Codex | Status: todo | Action: Verify lint gate reliability locally and in CI-equivalent command set; fix resulting lint issues with minimal code churn.
+- [ ] Owner: Codex | Status: todo | Action: Build web vertical slice foundation: typed API client utilities, shared query/state handling, and reusable UI primitives needed by dashboard/catalog views.
+- [ ] Owner: Codex | Status: todo | Action: Implement dashboard read-only metrics view using existing reports endpoints with loading/error/empty states.
+- [ ] Owner: Codex | Status: todo | Action: Implement catalog browse/detail read paths with basic filters/search and route-level navigation from dashboard.
+- [ ] Owner: Codex | Status: todo | Action: Harden auth: introduce explicit credential verification path, define token/session policy in code/docs, and add authorization guards for role-protected endpoints.
+- [ ] Owner: Codex | Status: todo | Action: Update `README.md` with a milestone status matrix (Foundation / In Progress / Not Started) synchronized with actual implementation.
+- [ ] Owner: Codex | Status: todo | Action: Add minimal automated smoke tests (API route smoke + web route render smoke) and include them in standard verification commands.
+- [ ] Owner: Codex | Status: todo | Action: Run full verification suite, collect evidence artifacts (command output + screenshot for visual web changes), and document outcomes in this plan's review summary.
+
+## Verification Steps and Expected Evidence
+- [ ] Check: `pnpm -r lint`
+  - Expected evidence: Lint passes for all workspaces using ESLint v9 flat config without missing-config failures.
+- [ ] Check: `pnpm -r typecheck`
+  - Expected evidence: TypeScript checks pass for `apps/api` and `apps/web` after feature/tooling updates.
+- [ ] Check: `pnpm -r build`
+  - Expected evidence: Nest and Next production builds succeed after incremental changes.
+- [ ] Check: `pnpm -r test`
+  - Expected evidence: New smoke tests execute successfully and remain deterministic.
+- [ ] Check: `<web app manual verification via Playwright screenshot>`
+  - Expected evidence: Captured artifact showing implemented dashboard/catalog UI state.
+- [ ] Check: `git diff -- PLANS.md README.md apps/api apps/web packages`
+  - Expected evidence: Diff reflects only scoped implementation changes tied to review recommendations.
+
+## Rollback / Mitigation Strategy
+- Trigger(s) for rollback: Lint/test gates become unstable, auth regressions block login/access, or web slice introduces critical runtime errors.
+- Rollback steps:
+  1. Revert latest feature/tooling commit(s) in reverse dependency order (tests/docs first, then feature slices, then config migration) until baseline commands pass.
+  2. Re-apply fixes in smaller increments with isolated verification after each increment.
+  3. If auth regresses, temporarily restore prior token validation path while retaining non-breaking documentation improvements.
+- Data/config/state restoration needs: Revert modified config files (`eslint.config.*`, package scripts, CI workflow) and any auth/session-related environment variable expectations.
+- Rollback owner: Codex.
+
+## Review Summary
+- What changed: Added a concrete execution plan to implement all prioritized fixes from `docs/project_state_review.md`, including sequencing, risks, verification evidence requirements, and rollback criteria.
+- Verification performed: `git diff -- PLANS.md` to confirm the update is limited to planning content.
+- Follow-ups: Start execution from P0 lint restoration, then proceed through web slice + auth hardening + status/test milestones in order.
