@@ -279,29 +279,29 @@ If any criterion is unmet, the plan remains open.
   - Mitigation: Keep scope deterministic (route and render smoke only), avoid brittle timing/network assumptions.
 
 ## Implementation Checklist
-- [ ] Owner: Codex | Status: todo | Action: Baseline current quality gates (`pnpm -r lint`, `pnpm -r typecheck`, `pnpm -r build`, existing tests) and capture before-state evidence for comparison.
-- [ ] Owner: Codex | Status: todo | Action: Implement shared ESLint v9 flat config (root + workspace wiring for `apps/api` and `apps/web`) and update lint scripts/CI invocation.
-- [ ] Owner: Codex | Status: todo | Action: Verify lint gate reliability locally and in CI-equivalent command set; fix resulting lint issues with minimal code churn.
-- [ ] Owner: Codex | Status: todo | Action: Build web vertical slice foundation: typed API client utilities, shared query/state handling, and reusable UI primitives needed by dashboard/catalog views.
-- [ ] Owner: Codex | Status: todo | Action: Implement dashboard read-only metrics view using existing reports endpoints with loading/error/empty states.
-- [ ] Owner: Codex | Status: todo | Action: Implement catalog browse/detail read paths with basic filters/search and route-level navigation from dashboard.
-- [ ] Owner: Codex | Status: todo | Action: Harden auth: introduce explicit credential verification path, define token/session policy in code/docs, and add authorization guards for role-protected endpoints.
-- [ ] Owner: Codex | Status: todo | Action: Update `README.md` with a milestone status matrix (Foundation / In Progress / Not Started) synchronized with actual implementation.
-- [ ] Owner: Codex | Status: todo | Action: Add minimal automated smoke tests (API route smoke + web route render smoke) and include them in standard verification commands.
-- [ ] Owner: Codex | Status: todo | Action: Run full verification suite, collect evidence artifacts (command output + screenshot for visual web changes), and document outcomes in this plan's review summary.
+- [x] Owner: Codex | Status: done | Action: Baseline current quality gates (`pnpm -r lint`, `pnpm -r typecheck`, `pnpm -r build`, existing tests) and capture before-state evidence for comparison.
+- [x] Owner: Codex | Status: done | Action: Implement shared ESLint v9 flat config (root + workspace wiring for `apps/api` and `apps/web`) and update lint scripts/CI invocation.
+- [x] Owner: Codex | Status: done | Action: Verify lint gate reliability locally and in CI-equivalent command set; fix resulting lint issues with minimal code churn.
+- [x] Owner: Codex | Status: done | Action: Build web vertical slice foundation: typed API client utilities, shared query/state handling, and reusable UI primitives needed by dashboard/catalog views.
+- [x] Owner: Codex | Status: done | Action: Implement dashboard read-only metrics view using existing reports endpoints with loading/error/empty states.
+- [x] Owner: Codex | Status: done | Action: Implement catalog browse/detail read paths with basic filters/search and route-level navigation from dashboard.
+- [x] Owner: Codex | Status: done | Action: Harden auth: introduce explicit credential verification path, define token/session policy in code/docs, and add authorization guards for role-protected endpoints.
+- [x] Owner: Codex | Status: done | Action: Update `README.md` with a milestone status matrix (Foundation / In Progress / Not Started) synchronized with actual implementation.
+- [x] Owner: Codex | Status: done | Action: Add minimal automated smoke tests (API route smoke + web route render smoke) and include them in standard verification commands.
+- [x] Owner: Codex | Status: done | Action: Run full verification suite, collect evidence artifacts (command output + screenshot for visual web changes), and document outcomes in this plan's review summary.
 
 ## Verification Steps and Expected Evidence
-- [ ] Check: `pnpm -r lint`
+- [x] Check: `pnpm -r lint`
   - Expected evidence: Lint passes for all workspaces using ESLint v9 flat config without missing-config failures.
-- [ ] Check: `pnpm -r typecheck`
+- [x] Check: `pnpm -r typecheck`
   - Expected evidence: TypeScript checks pass for `apps/api` and `apps/web` after feature/tooling updates.
-- [ ] Check: `pnpm -r build`
+- [x] Check: `pnpm -r build`
   - Expected evidence: Nest and Next production builds succeed after incremental changes.
-- [ ] Check: `pnpm -r test`
+- [x] Check: `pnpm -r test`
   - Expected evidence: New smoke tests execute successfully and remain deterministic.
-- [ ] Check: `<web app manual verification via Playwright screenshot>`
+- [x] Check: `<web app manual verification via Playwright screenshot>`
   - Expected evidence: Captured artifact showing implemented dashboard/catalog UI state.
-- [ ] Check: `git diff -- PLANS.md README.md apps/api apps/web packages`
+- [x] Check: `git diff -- PLANS.md README.md apps/api apps/web packages`
   - Expected evidence: Diff reflects only scoped implementation changes tied to review recommendations.
 
 ## Rollback / Mitigation Strategy
@@ -314,6 +314,6 @@ If any criterion is unmet, the plan remains open.
 - Rollback owner: Codex.
 
 ## Review Summary
-- What changed: Added a concrete execution plan to implement all prioritized fixes from `docs/project_state_review.md`, including sequencing, risks, verification evidence requirements, and rollback criteria.
-- Verification performed: `git diff -- PLANS.md` to confirm the update is limited to planning content.
-- Follow-ups: Start execution from P0 lint restoration, then proceed through web slice + auth hardening + status/test milestones in order.
+- What changed: Implemented the planned fixes end-to-end: ESLint v9 flat config at repo root, web dashboard/catalog read vertical slice (including catalog detail route), auth credential+role guard foundations, README milestone matrix, and lightweight API/web smoke tests.
+- Verification performed: Ran `pnpm -r lint`, `pnpm -r typecheck`, `pnpm -r build`, `pnpm -r test`, captured a dashboard screenshot artifact via Playwright, and reviewed scope with `git diff -- PLANS.md README.md apps/api apps/web packages`.
+- Follow-ups: Integrate Next.js ESLint plugin flat-config rules to remove the build-time warning and expand smoke tests to exercise HTTP-level API route behavior against a test app instance.

@@ -19,5 +19,12 @@
     "db:migrate": "pnpm --filter @snoredex/api prisma:migrate:deploy",
     "db:seed": "pnpm --filter @snoredex/api prisma:seed",
     "db:setup": "pnpm db:up && pnpm db:migrate && pnpm db:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "typescript-eslint": "^8.46.2",
+    "tsx": "^4.20.6",
+    "supertest": "^7.1.4",
+    "@types/supertest": "^6.0.3"
   }
 }

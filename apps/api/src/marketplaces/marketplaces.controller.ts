@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: CC-BY-NC-4.0
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { MarketplacesService } from './marketplaces.service';
 
@@ -7,6 +9,7 @@ import { MarketplacesService } from './marketplaces.service';
 export class MarketplacesController {
   constructor(private readonly marketplacesService: MarketplacesService) {}
 
+  @Public()
   @Get('listings')
   listListings(
     @Query('page') page?: number,
@@ -22,6 +25,7 @@ export class MarketplacesController {
     });
   }
 
+  @Roles('admin', 'operator')
   @Post('listings')
   createListing(@Body() body: CreateListingDto) {
     return this.marketplacesService.createListing(body);
