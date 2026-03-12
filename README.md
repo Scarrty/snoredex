@@ -19,6 +19,16 @@ The repository now includes a monorepo web-application scaffold that follows the
 - `packages/eslint-config`: placeholder for shared lint config.
 - `docker-compose.yml`: local Postgres + app containers.
 
+## 🧭 Planning workflow
+
+`PLANS.md` is the repository's lightweight execution-planning source of truth for non-trivial work: it defines how to frame scope, track implementation status, and record verification evidence so changes are clear, reviewable, and reproducible without duplicating policy text in every task.
+
+### How to start work
+
+- [ ] Read `AGENTS.md`.
+- [ ] Open/update `PLANS.md` for the task.
+- [ ] Execute verification steps and record evidence in `PLANS.md`.
+
 ## 🧠 Schema highlights
 
 - **Immutable stock ledger:** `inventory_movements` cannot be updated/deleted. `quantity_on_hand` is synchronized by triggers.
