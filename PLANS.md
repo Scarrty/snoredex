@@ -115,7 +115,61 @@ If any criterion is unmet, the plan remains open.
 - Rollback owner:
 
 ## Review Summary
-- What changed:
-- Verification performed:
-- Follow-ups:
+- What changed: Added a short planning-workflow section in `README.md` with a one-paragraph explanation of `PLANS.md` and a three-item "How to start work" checklist referencing `AGENTS.md` and `PLANS.md` exactly.
+- Verification performed: Ran `rg -n "PLANS.md|AGENTS.md|How to start work" README.md` and `git diff -- README.md PLANS.md tasks/lessons.md` to validate content and scope of changes.
+- Follow-ups: None.
 ```
+
+---
+
+# Plan: Add PLANS.md reference to onboarding README
+
+## Context / Problem Statement
+- Request: Add a short reference to `PLANS.md` in the main onboarding surface with a one-paragraph explanation and a mini-checklist.
+- Problem: The root onboarding doc currently explains setup but does not direct contributors to the planning workflow files (`AGENTS.md` and `PLANS.md`) before implementation.
+- Constraints: Keep wording lightweight, avoid duplicating policy text, and ensure file names/paths match exactly.
+
+## Scope and Non-Goals
+### In Scope
+- Update root `README.md` with a concise paragraph describing `PLANS.md`.
+- Add a short "How to start work" checklist containing the three required items.
+- Verify naming/path consistency for `AGENTS.md` and `PLANS.md`.
+
+### Non-Goals
+- Rewriting full workflow policy from `AGENTS.md` or `PLANS.md`.
+- Updating onboarding docs outside the root `README.md`.
+
+## Assumptions and Risks
+### Assumptions
+- Root `README.md` is the intended main onboarding surface.
+- Contributors can access `AGENTS.md` and `PLANS.md` at the repository root.
+
+### Risks
+- Risk: New section could become too verbose and duplicate policy details.
+  - Impact: Onboarding noise and policy drift.
+  - Mitigation: Keep to one paragraph plus a minimal checklist that points to canonical files.
+
+## Implementation Checklist
+- [x] Owner: Codex | Status: done | Action: Create a task-specific execution plan entry in `PLANS.md` before implementation.
+- [x] Owner: Codex | Status: done | Action: Add concise `PLANS.md` onboarding reference section to root `README.md` with required checklist items.
+- [x] Owner: Codex | Status: done | Action: Run verification checks for exact file/path names and capture evidence.
+- [x] Owner: Codex | Status: done | Action: Record review summary and verification outcomes in this plan.
+
+## Verification Steps and Expected Evidence
+- [x] Check: `rg -n "PLANS.md|AGENTS.md|How to start work" README.md`
+  - Expected evidence: README contains exact `AGENTS.md` and `PLANS.md` strings and the new mini-checklist heading.
+  - Evidence captured: Output showed the new section heading plus exact `AGENTS.md`/`PLANS.md` checklist entries in `README.md`.
+- [x] Check: `git diff -- README.md PLANS.md tasks/lessons.md`
+  - Expected evidence: Diff shows only lightweight onboarding addition plus plan documentation updates.
+  - Evidence captured: Diff contained the README onboarding section, this plan entry/status updates, and the lessons note from the tooling correction.
+
+## Rollback / Mitigation Strategy
+- Trigger(s) for rollback: If README wording is incorrect, too verbose, or references wrong filenames/paths.
+- Rollback steps: Revert the README section (or entire commit) and reapply with corrected minimal text.
+- Data/config/state restoration needs: None (documentation-only change).
+- Rollback owner: Codex.
+
+## Review Summary
+- What changed: Added a short planning-workflow section in `README.md` with a one-paragraph explanation of `PLANS.md` and a three-item "How to start work" checklist referencing `AGENTS.md` and `PLANS.md` exactly.
+- Verification performed: Ran `rg -n "PLANS.md|AGENTS.md|How to start work" README.md` and `git diff -- README.md PLANS.md tasks/lessons.md` to validate content and scope of changes.
+- Follow-ups: None.
