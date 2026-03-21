@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: CC-BY-NC-4.0
+import { SectionPage } from '../../components/section-page';
+import { sectionContent } from '../../lib/site-data';
+
 export default function InventoryPage() {
-  return (
-    <main>
-      <h1>Inventory</h1>
-      <p>Inventory page scaffold ready for MVP implementation.</p>
-    </main>
-  );
+  return <SectionPage content={sectionContent.inventory} currentHref="/inventory" />;
 }

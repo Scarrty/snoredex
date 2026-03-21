@@ -2,15 +2,20 @@
 import type { ReactNode } from 'react';
 
 type StatePanelProps = {
+  eyebrow?: string;
+  className?: string;
   title: string;
   children: ReactNode;
 };
 
-export function StatePanel({ title, children }: StatePanelProps) {
+export function StatePanel({ eyebrow, className, title, children }: StatePanelProps) {
+  const classes = className ? `paper-panel state-panel ${className}` : 'paper-panel state-panel';
+
   return (
-    <section style={{ border: '1px solid #dbeafe', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-      <h2 style={{ marginTop: 0 }}>{title}</h2>
-      {children}
+    <section className={classes}>
+      {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+      <h2>{title}</h2>
+      <div className="state-panel__content">{children}</div>
     </section>
   );
 }

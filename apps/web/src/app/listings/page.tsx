@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: CC-BY-NC-4.0
+import { SectionPage } from '../../components/section-page';
+import { sectionContent } from '../../lib/site-data';
+
 export default function ListingsPage() {
-  return (
-    <main>
-      <h1>Listings</h1>
-      <p>Listings page scaffold ready for MVP implementation.</p>
-    </main>
-  );
+  return <SectionPage content={sectionContent.listings} currentHref="/listings" />;
 }

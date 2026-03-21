@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: CC-BY-NC-4.0
+import { SectionPage } from '../../components/section-page';
+import { sectionContent } from '../../lib/site-data';
+
 export default function AcquisitionsPage() {
   return (
-    <main>
-      <h1>Acquisitions</h1>
-      <p>Acquisitions page scaffold ready for MVP implementation.</p>
-    </main>
+    <SectionPage content={sectionContent.acquisitions} currentHref="/acquisitions" />
   );
 }
